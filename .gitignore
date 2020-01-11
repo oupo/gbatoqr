@@ -9,4 +9,3 @@ nds/source/QrSegment.hpp
 nds/source/base64.cpp
 nds/source/base64.h
 nds/build
-detector/stackblur.js
