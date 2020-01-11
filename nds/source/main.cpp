@@ -1,4 +1,3 @@
-#include <fat.h>
 #include <nds.h>
 #include <stdio.h>
 #include <iostream>
@@ -98,15 +97,11 @@ void dump(void)
 	u16 *videoMemoryMain = bgGetGfxPtr(bgMain);
 	for (int i = 0; i < 256 * 256; i++)
 		videoMemoryMain[i] = ARGB16(1, 31, 31, 31);
-	char name[13] = "";
-	char code[5] = "";
+	char name[13];
 	strncpy(name, (char *)0x080000A0, 12);
-	memcpy(code, (char *)0x080000AC, 4);
 	printf("Dump target: %s\n", name);
-
-	size_t i;
 	wait(0);
-	for (i = 0x0; i < 32 * 1024 * 1024; i += BLOCK_SIZE)
+	for (int i = 0x0; i < 32 * 1024 * 1024; i += BLOCK_SIZE)
 	{
 		printf("Dumping %07X...", i);
 		dumpQR_base64(videoMemoryMain, i / BLOCK_SIZE, ((uint8_t *)GBAROM) + i, BLOCK_SIZE);
