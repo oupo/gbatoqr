@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>test</title>
+  <style>
+    #main {
+      display: flex;
+    }
+    #video-container {
+      width: 800px;
+      height: 600px;
+    }
+    #video-container > * {
+      position: absolute;
+    }
+
+    #output > div {
+      width: 12rem;
+    }
+
+    #output .success {
+      background-color: #c0e7b5;
+    }
+
+    #output .failed {
+      background-color: #e7b5b5;
+    }
+    </style>
+</head>
+<body>
+  <div id="main">
+    <div id="video-container">
+      <video id="video" width="800" height="600"></video>
+      <canvas width="800" height="600" id="canvas" style="display:none"></canvass>
+    </div>
+    <div id="output">
+    </div>
+  </div>
+  <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+    crossorigin="anonymous"></script>
+  <script type="text/javascript" src="https://unpkg.com/@zxing/library@0.15.2"></script>
+  <script type="text/javascript">
+    const MAX_OUTPUT = 50;
+    const romdata = [];
+    const codeReader = new ZXing.BrowserQRCodeReader();
+    const video = document.getElementById('video');
+    const width = video.width, height = video.height;
+    const output = document.getElementById("output");
+
+    const canvas = document.getElementById("canvas");
+    const context = canvas.getContext("2d");
+    context.fillStyle = "rgba(0,0,255,0.5)";
+    context.fillRect(0, 0, width, height);
+
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ video: true }).then(function (stream) {
+        codeReader.attachStreamToVideo(stream, video).then(() => {
+          codeReader.decodeContinuously(video, (res) => {
+            if (res) {
+              handleResponse(res.text);
+              canvas.style.display = "";
+            } else {
+              canvas.style.display = "none";
+            }
+          });
+        });
+      });
+    }
+
+    let maxNum;
+
+    function handleResponse(res) {
+      if (!res.match(/^[0-9a-f]{8},/)) return;
+      let num = parseInt(res.slice(0, 8), 16);
+      if (romdata[num]) return;
+      if (maxNum !== undefined) {
+        if (maxNum < num - 1) {
+          let rangeText = maxNum + 1 == num - 1 ? String(maxNum + 1) : (maxNum + 1) + ".." + (num - 1);
+          prepend($("<div class='failed'/>").text("failed: " + rangeText).get(0));
+        }
+        maxNum = Math.max(maxNum, num);
+      } else {
+        maxNum = num;
+      }
+      romdata[num] = atob(res.slice(9));
+      prepend($("<div class='success'/>").text("success: " + num).get(0));
+    }
+
+    function prepend(node) {
+      if (output.childNodes.length >= MAX_OUTPUT - 1) {
+        output.removeChild(output.childNodes[output.childNodes.length - 1]);
+      }
+      if (output.childNodes.length == 0) {
+        output.appendChild(node);
+      } else {
+        output.insertBefore(node, output.childNodes[0]);
+      }
+    }
+  </script>
+</body>
+
+</html>

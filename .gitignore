@@ -1,0 +1,12 @@
+*.elf
+*.nds
+nds/source/BitBuffer.cpp
+nds/source/BitBuffer.hpp
+nds/source/QrCode.cpp
+nds/source/QrCode.hpp
+nds/source/QrSegment.cpp
+nds/source/QrSegment.hpp
+nds/source/base64.cpp
+nds/source/base64.h
+nds/build
+detector/stackblur.js

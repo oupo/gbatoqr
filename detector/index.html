@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>test</title>
+</head>
+<body>
+<video id="video" width="800" height="600" autoplay style="display:none"></video>
+<div><canvas id="canvas"></canvas></div>
+<div><input type="text" id="clip" value="30,30,400,400"></div>
+<script src="stackblur.js"></script>
+<script src="quirc-module.js"></script>
+<script>
+let video = document.getElementById('video');
+let canvas = document.getElementById('canvas');
+let context = canvas.getContext('2d');
+
+let width = video.width, height = video.height;
+canvas.width = width, canvas.height = height;
+const QUIRC_MAX_BITMAP = 3917;
+const QUIRC_MAX_PAYLOAD	= 8896;
+
+QuircModule().then(function(Module) {
+    let quirc = Module._quirc_new();
+    if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
+            video.srcObject = stream;
+            video.play();
+            setInterval(() => {
+                let clip = document.getElementById("clip").value.split(",").map((x) => Number(x));
+                let [x, y, w, h] = clip;
+                context.drawImage(video, 0, 0, width, height);
+                StackBlur.canvasRGB(canvas, 0, 0, width, height, 1);
+                let imagedata = context.getImageData(x, y, w, h);
+                context.lineWidth = 1;
+                context.strokeStyle = "cyan";
+                context.strokeRect(x, y, w, h);
+                
+                if (quirc == 0) throw "failed: quirc_new";
+                if (Module._quirc_resize(quirc, w, h) < 0) throw "failed: quirc_resize";
+                let imageptr = Module._quirc_begin(quirc, 0, 0);
+                if (imageptr == 0) throw "failed: quirc_begin";
+                writeImage(Module, imageptr, imagedata.data, w, h);
+                Module._quirc_end(quirc);
+                let count = Module._quirc_count(quirc);
+                for (let i = 0; i < count; i ++) {
+                    let decoded = decode(Module, quirc, i);
+                    if (decoded) {
+                        context.lineWidth = 3;
+                        context.strokeStyle = decoded.payload ? "#ff0000" : "#c2873e";
+                        context.beginPath();
+                        context.moveTo(x + decoded.corners[0], y + decoded.corners[1]);
+                        context.lineTo(x + decoded.corners[2], y + decoded.corners[3]);
+                        context.lineTo(x + decoded.corners[4], y + decoded.corners[5]);
+                        context.lineTo(x + decoded.corners[6], y + decoded.corners[7]);
+                        context.lineTo(x + decoded.corners[0], y + decoded.corners[1]);
+                        context.stroke();
+                        if (decoded.payload) {
+                            let blockid = decoded.payload[0] | (decoded.payload[1] << 8) | (decoded.payload[2] << 16) | (decoded.payload[3] << 24);
+                            console.log(blockid);
+                        }
+                    }
+                }  
+                Module._quirc_end(quirc);
+            }, 100);
+        });
+    }
+});
+
+function writeImage(module, ptr, data, w, h) {
+    let p = ptr;
+    let buffer = new ArrayBuffer(w * h);
+    let array = new Uint8Array(buffer);
+    for (let y = 0; y < h; y ++) {
+        for (let x = 0; x < w; x ++) {
+            let i = 4 * (y * w + x);
+            let color = Math.floor((data[i] + data[i + 1] + data[i + 2]) / 3);
+            module.HEAPU8[ptr + y * w + x] = color;
+        }
+    }
+}
+
+function decode(module, quirc, i) {
+    let code = 0, data = 0;
+    try {
+        code = module._malloc(4 * 2 * 4 + 4 + QUIRC_MAX_BITMAP);
+        data = module._malloc(4 + 4 + 4 + 4 + QUIRC_MAX_PAYLOAD + 4 + 4);
+        if (code == 0 || data == 0) {
+            throw "failed: malloc";
+        }
+        module._quirc_extract(quirc, i, code);
+        let corners = Array.from(module.HEAP32.slice(code / 4, code / 4 + 2 * 4));
+        let err = module._quirc_decode(code, data);
+        if (err != 0) return {corners};
+        let version = module.HEAP32[data / 4];
+        let ecc_level = module.HEAP32[data / 4 + 1];
+        let mask = module.HEAP32[data / 4 + 2];
+        let data_type = module.HEAP32[data / 4 + 3];
+        let payload = module.HEAPU8.slice(data + 4 * 4, data + 4 * 4 + QUIRC_MAX_PAYLOAD);
+        let payload_len = module.HEAP32[data / 4 + 4 + QUIRC_MAX_PAYLOAD / 4];
+        let eci = module.HEAP32[data / 4 + 4 + QUIRC_MAX_PAYLOAD / 4 + 1];
+        return {corners, version, ecc_level, mask, data_type, payload, payload_len, eci};
+    } finally {
+        if (code != 0) module._free(code);
+        if (data != 0) module._free(data);
+    }
+}
+</script>
+</body>
+</html>
