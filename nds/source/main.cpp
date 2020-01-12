@@ -7,8 +7,6 @@
 #include "BitBuffer.hpp"
 #include "QrCode.hpp"
 
-#include "base64.h"
-
 using qrcodegen::QrCode;
 using qrcodegen::QrSegment;
 using std::uint8_t;
@@ -59,30 +57,6 @@ void dumpQR(u16 *videoMemoryMain, int blockid, uint8_t *buf, int len)
 			for (int dx = 0; dx < 2; dx ++) {
 				for (int dy = 0; dy < 2; dy ++) {
 					videoMemoryMain[(2 * x + dx + 50) + (2 * y + dy + 15) * 256] = ARGB16(1, c, c, c);
-				}
-			}
-		}
-	}
-}
-
-void dumpQR_base64(u16 *videoMemoryMain, int blockid, uint8_t *buf, int len)
-{
-	std::string str = base64_encode(buf, len);
-	char head[12];
-	sprintf(head, "%08x,", blockid);
-	str = std::string(head) + str;
-	const QrCode::Ecc errCorLvl = QrCode::Ecc::QUARTILE; // Error correction level
-	const QrCode qr = QrCode::encodeText(str.c_str(), errCorLvl);
-	int size = qr.getSize();
-	for (int y = -1; y < size + 1; y++)
-	{
-		for (int x = -1; x < size + 1; x++)
-		{
-			const int D = 2; 
-			int c = qr.getModule(x, y) ? 0 : 31;
-			for (int dx = 0; dx < D; dx ++) {
-				for (int dy = 0; dy < D; dy ++) {
-					videoMemoryMain[(D * x + dx + 0) + (D * y + dy + 0) * 256] = ARGB16(1, c, c, c);
 				}
 			}
 		}
