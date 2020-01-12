@@ -50,17 +50,22 @@
     const romdata = [];
     const codeReader = new ZXing.BrowserQRCodeReader();
     const video = document.getElementById('video');
-    const width = video.width, height = video.height;
     const output = document.getElementById("output");
 
     const canvas = document.getElementById("canvas");
     const context = canvas.getContext("2d");
-    context.fillStyle = "rgba(0,0,255,0.5)";
-    context.fillRect(0, 0, width, height);
 
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices.getUserMedia({ audio: false, video: {facingMode: "environment"} }).then(function (stream) {
+      navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: "environment" } }).then(function (stream) {
         codeReader.attachStreamToVideo(stream, video).then(() => {
+          let w = video.videoWidth, h = video.videoHeight;
+          video.width = w, video.height = h;
+          canvas.width = w, canvas.height = h;
+          document.getElementById("video-container").style.width = w + "px";
+          document.getElementById("video-container").style.height = h + "px";
+          context.clearRect(0, 0, w, h);
+          context.fillStyle = "rgba(0,0,255,0.5)";
+          context.fillRect(0, 0, w, h);
           codeReader.decodeContinuously(video, (res) => {
             if (res) {
               handleResponse(res.text);
@@ -87,7 +92,6 @@
     }
 
     document.getElementById("save-button").addEventListener("click", () => {
-      console.log(JSZip);
       let zip = new JSZip();
       for (let num in romdata) {
         zip.file(String(num), romdata[num]);
