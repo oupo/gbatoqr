@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="utf-8">
   <title>test</title>
@@ -28,6 +29,7 @@
     }
     </style>
 </head>
+
 <body>
   <div id="main">
     <div id="video-container">
@@ -42,6 +44,7 @@
     crossorigin="anonymous"></script>
   <script type="text/javascript" src="https://unpkg.com/@zxing/library@0.15.2"></script>
   <script type="text/javascript" src="node_modules/jszip/dist/jszip.js"></script>
+  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
   <script>
     const MAX_OUTPUT = 50;
     const romdata = [];
@@ -56,7 +59,7 @@
     context.fillRect(0, 0, width, height);
 
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices.getUserMedia({ video: true }).then(function (stream) {
+      navigator.mediaDevices.getUserMedia({ audio: false, video: {facingMode: "environment"} }).then(function (stream) {
         codeReader.attachStreamToVideo(stream, video).then(() => {
           codeReader.decodeContinuously(video, (res) => {
             if (res) {
@@ -68,17 +71,19 @@
           });
         });
       });
+    } else {
+      alert("The browser does not support camera.");
     }
 
     const anchor = document.createElement("a");
     document.body.appendChild(anchor);
     anchor.style = "display: none";
     function saveData(blob, fileName) {
-        let url = window.URL.createObjectURL(blob);
-        anchor.href = url;
-        anchor.download = fileName;
-        anchor.click();
-        window.URL.revokeObjectURL(url);
+      let url = window.URL.createObjectURL(blob);
+      anchor.href = url;
+      anchor.download = fileName;
+      anchor.click();
+      window.URL.revokeObjectURL(url);
     }
 
     document.getElementById("save-button").addEventListener("click", () => {
@@ -87,10 +92,10 @@
       for (let num in romdata) {
         zip.file(String(num), romdata[num]);
       }
-      zip.generateAsync({type:"blob"})
-      .then(function(content) {
-        saveData(content, "gbarom.zip");
-      });
+      zip.generateAsync({ type: "blob" })
+        .then(function (content) {
+          saveData(content, "gbarom.zip");
+        });
     });
 
     let maxNum;
@@ -116,8 +121,8 @@
       let decodedStr = atob(str);
       let len = decodedStr.length;
       let buffer = new ArrayBuffer(len);
-      let array = new  Uint8Array(buffer);
-      for (let i = 0; i < len; i ++) {
+      let array = new Uint8Array(buffer);
+      for (let i = 0; i < len; i++) {
         array[i] = decodedStr.charCodeAt(i);
       }
       return buffer;
