@@ -45,8 +45,10 @@ void dumpQR(u16 *videoMemoryMain, int blockid, uint8_t *buf, int len)
 	vec[2] = (blockid >> 16) & 0xff;
 	vec[3] = (blockid >> 24) & 0xff;
 	std::copy(buf, buf + len, vec.begin() + 4);
-	const QrCode::Ecc errCorLvl = QrCode::Ecc::QUARTILE; // Error correction level
-	const QrCode qr = QrCode::encodeBinary(vec, errCorLvl);
+	const QrCode::Ecc errCorLvl = QrCode::Ecc::MEDIUM; // Error correction level
+	std::vector<QrSegment> segs{QrSegment::makeEci(27), QrSegment::makeBytes(vec)};
+	int mask = 0; // fix mask for speed
+	const QrCode qr = QrCode::encodeSegments(segs, errCorLvl, 1, 40, mask);
 
 	int size = qr.getSize();
 	for (int y = -1; y < size + 1; y++)
@@ -80,14 +82,14 @@ void dumpQR_base64(u16 *videoMemoryMain, int blockid, uint8_t *buf, int len)
 			int c = qr.getModule(x, y) ? 0 : 31;
 			for (int dx = 0; dx < D; dx ++) {
 				for (int dy = 0; dy < D; dy ++) {
-					videoMemoryMain[(D * x + dx + 50) + (D * y + dy + 5) * 256] = ARGB16(1, c, c, c);
+					videoMemoryMain[(D * x + dx + 0) + (D * y + dy + 0) * 256] = ARGB16(1, c, c, c);
 				}
 			}
 		}
 	}
 }
 
-const int BLOCK_SIZE = 0x100;
+const int BLOCK_SIZE = 0x1c0;
 
 void dump(void)
 {
@@ -104,14 +106,14 @@ void dump(void)
 	for (int i = 0x0; i < 32 * 1024 * 1024; i += BLOCK_SIZE)
 	{
 		printf("Dumping %07X...", i);
-		dumpQR_base64(videoMemoryMain, i / BLOCK_SIZE, ((uint8_t *)GBAROM) + i, BLOCK_SIZE);
+		dumpQR(videoMemoryMain, i / BLOCK_SIZE, ((uint8_t *)GBAROM) + i, BLOCK_SIZE);
 		if (i == 0) {
 			printf("done. push A.\n");
 			waitKey();
 			wait(0);
 		} else {
 			printf("done\n");
-			wait(60 * 2);
+			wait(60 * 1);
 		}
 	}
 	printf("Done!\n");

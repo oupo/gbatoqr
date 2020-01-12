@@ -42,11 +42,14 @@
   <div><button id="save-button">Save as zip</button></div>
   <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
     crossorigin="anonymous"></script>
+  
   <script type="text/javascript" src="https://unpkg.com/@zxing/library@0.15.2"></script>
   <script type="text/javascript" src="node_modules/jszip/dist/jszip.js"></script>
   <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
   <script>
     const MAX_OUTPUT = 50;
+    const MAX_ROM_BYTES = 32 * 1024 * 1024;
+    const BLOCK_SIZE = 0x1c0;
     const romdata = [];
     const codeReader = new ZXing.BrowserQRCodeReader();
     const video = document.getElementById('video');
@@ -105,8 +108,12 @@
     let maxNum;
 
     function handleResponse(res) {
-      if (!res.match(/^[0-9a-f]{8},/)) return;
-      let num = parseInt(res.slice(0, 8), 16);
+      let buffer = new ArrayBuffer(res.length);
+      let array8 = new Uint8Array(buffer);
+      let array32 = new Uint32Array(buffer);
+      for (let i = 0; i < res.length; i ++) array8[i] = res.charCodeAt(i);
+      let num = array32[0];
+      if (!(0 <= num && num < Math.ceil(MAX_ROM_BYTES / BLOCK_SIZE))) return;
       if (romdata[num]) return;
       if (maxNum !== undefined) {
         if (maxNum < num - 1) {
@@ -117,19 +124,8 @@
       } else {
         maxNum = num;
       }
-      romdata[num] = base64decode(res.slice(9));
+      romdata[num] = array8.slice(4).buffer;
       prepend($("<div class='success'/>").text("success: " + num).get(0));
-    }
-
-    function base64decode(str) {
-      let decodedStr = atob(str);
-      let len = decodedStr.length;
-      let buffer = new ArrayBuffer(len);
-      let array = new Uint8Array(buffer);
-      for (let i = 0; i < len; i++) {
-        array[i] = decodedStr.charCodeAt(i);
-      }
-      return buffer;
     }
 
     function prepend(node) {
