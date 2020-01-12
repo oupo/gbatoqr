@@ -1,110 +1,144 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <meta charset="utf-8">
-    <title>test</title>
+  <meta charset="utf-8">
+  <title>test</title>
+  <style>
+    #main {
+      display: flex;
+    }
+    #video-container {
+      width: 800px;
+      height: 600px;
+    }
+    #video-container > * {
+      position: absolute;
+    }
+
+    #output > div {
+      width: 12rem;
+    }
+
+    #output .success {
+      background-color: #c0e7b5;
+    }
+
+    #output .failed {
+      background-color: #e7b5b5;
+    }
+    </style>
 </head>
+
 <body>
-<video id="video" width="800" height="600" autoplay style="display:none"></video>
-<div><canvas id="canvas"></canvas></div>
-<div><input type="text" id="clip" value="30,30,400,400"></div>
-<script src="https://unpkg.com/stackblur-canvas@2.2.0/dist/stackblur.js"></script>
-<script src="quirc-module.js"></script>
-<script>
-let video = document.getElementById('video');
-let canvas = document.getElementById('canvas');
-let context = canvas.getContext('2d');
+  <div id="main">
+    <div id="video-container">
+      <video id="video" width="800" height="600"></video>
+      <canvas width="800" height="600" id="canvas" style="display:none"></canvass>
+    </div>
+    <div id="output">
+    </div>
+  </div>
+  <div><button id="save-button">Save as zip</button></div>
+  <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+    crossorigin="anonymous"></script>
+  <script type="text/javascript" src="https://unpkg.com/@zxing/library@0.15.2"></script>
+  <script type="text/javascript" src="node_modules/jszip/dist/jszip.js"></script>
+  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+  <script>
+    const MAX_OUTPUT = 50;
+    const romdata = [];
+    const codeReader = new ZXing.BrowserQRCodeReader();
+    const video = document.getElementById('video');
+    const width = video.width, height = video.height;
+    const output = document.getElementById("output");
 
-let width = video.width, height = video.height;
-canvas.width = width, canvas.height = height;
-const QUIRC_MAX_BITMAP = 3917;
-const QUIRC_MAX_PAYLOAD	= 8896;
+    const canvas = document.getElementById("canvas");
+    const context = canvas.getContext("2d");
+    context.fillStyle = "rgba(0,0,255,0.5)";
+    context.fillRect(0, 0, width, height);
 
-QuircModule().then(function(Module) {
-    let quirc = Module._quirc_new();
-    if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
-            video.srcObject = stream;
-            video.play();
-            setInterval(() => {
-                let clip = document.getElementById("clip").value.split(",").map((x) => Number(x));
-                let [x, y, w, h] = clip;
-                context.drawImage(video, 0, 0, width, height);
-                StackBlur.canvasRGB(canvas, 0, 0, width, height, 1);
-                let imagedata = context.getImageData(x, y, w, h);
-                context.lineWidth = 1;
-                context.strokeStyle = "cyan";
-                context.strokeRect(x, y, w, h);
-                
-                if (quirc == 0) throw "failed: quirc_new";
-                if (Module._quirc_resize(quirc, w, h) < 0) throw "failed: quirc_resize";
-                let imageptr = Module._quirc_begin(quirc, 0, 0);
-                if (imageptr == 0) throw "failed: quirc_begin";
-                writeImage(Module, imageptr, imagedata.data, w, h);
-                Module._quirc_end(quirc);
-                let count = Module._quirc_count(quirc);
-                for (let i = 0; i < count; i ++) {
-                    let decoded = decode(Module, quirc, i);
-                    if (decoded) {
-                        context.lineWidth = 3;
-                        context.strokeStyle = decoded.payload ? "#ff0000" : "#c2873e";
-                        context.beginPath();
-                        context.moveTo(x + decoded.corners[0], y + decoded.corners[1]);
-                        context.lineTo(x + decoded.corners[2], y + decoded.corners[3]);
-                        context.lineTo(x + decoded.corners[4], y + decoded.corners[5]);
-                        context.lineTo(x + decoded.corners[6], y + decoded.corners[7]);
-                        context.lineTo(x + decoded.corners[0], y + decoded.corners[1]);
-                        context.stroke();
-                        if (decoded.payload) {
-                            let blockid = decoded.payload[0] | (decoded.payload[1] << 8) | (decoded.payload[2] << 16) | (decoded.payload[3] << 24);
-                            console.log(blockid);
-                        }
-                    }
-                }  
-                Module._quirc_end(quirc);
-            }, 100);
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: false, video: {facingMode: "environment"} }).then(function (stream) {
+        codeReader.attachStreamToVideo(stream, video).then(() => {
+          codeReader.decodeContinuously(video, (res) => {
+            if (res) {
+              handleResponse(res.text);
+              canvas.style.display = "";
+            } else {
+              canvas.style.display = "none";
+            }
+          });
         });
+      });
+    } else {
+      alert("The browser does not support camera.");
     }
-});
 
-function writeImage(module, ptr, data, w, h) {
-    let p = ptr;
-    let buffer = new ArrayBuffer(w * h);
-    let array = new Uint8Array(buffer);
-    for (let y = 0; y < h; y ++) {
-        for (let x = 0; x < w; x ++) {
-            let i = 4 * (y * w + x);
-            let color = Math.floor((data[i] + data[i + 1] + data[i + 2]) / 3);
-            module.HEAPU8[ptr + y * w + x] = color;
-        }
+    const anchor = document.createElement("a");
+    document.body.appendChild(anchor);
+    anchor.style = "display: none";
+    function saveData(blob, fileName) {
+      let url = window.URL.createObjectURL(blob);
+      anchor.href = url;
+      anchor.download = fileName;
+      anchor.click();
+      window.URL.revokeObjectURL(url);
     }
-}
 
-function decode(module, quirc, i) {
-    let code = 0, data = 0;
-    try {
-        code = module._malloc(4 * 2 * 4 + 4 + QUIRC_MAX_BITMAP);
-        data = module._malloc(4 + 4 + 4 + 4 + QUIRC_MAX_PAYLOAD + 4 + 4);
-        if (code == 0 || data == 0) {
-            throw "failed: malloc";
+    document.getElementById("save-button").addEventListener("click", () => {
+      console.log(JSZip);
+      let zip = new JSZip();
+      for (let num in romdata) {
+        zip.file(String(num), romdata[num]);
+      }
+      zip.generateAsync({ type: "blob" })
+        .then(function (content) {
+          saveData(content, "gbarom.zip");
+        });
+    });
+
+    let maxNum;
+
+    function handleResponse(res) {
+      if (!res.match(/^[0-9a-f]{8},/)) return;
+      let num = parseInt(res.slice(0, 8), 16);
+      if (romdata[num]) return;
+      if (maxNum !== undefined) {
+        if (maxNum < num - 1) {
+          let rangeText = maxNum + 1 == num - 1 ? String(maxNum + 1) : (maxNum + 1) + ".." + (num - 1);
+          prepend($("<div class='failed'/>").text("failed: " + rangeText).get(0));
         }
-        module._quirc_extract(quirc, i, code);
-        let corners = Array.from(module.HEAP32.slice(code / 4, code / 4 + 2 * 4));
-        let err = module._quirc_decode(code, data);
-        if (err != 0) return {corners};
-        let version = module.HEAP32[data / 4];
-        let ecc_level = module.HEAP32[data / 4 + 1];
-        let mask = module.HEAP32[data / 4 + 2];
-        let data_type = module.HEAP32[data / 4 + 3];
-        let payload = module.HEAPU8.slice(data + 4 * 4, data + 4 * 4 + QUIRC_MAX_PAYLOAD);
-        let payload_len = module.HEAP32[data / 4 + 4 + QUIRC_MAX_PAYLOAD / 4];
-        let eci = module.HEAP32[data / 4 + 4 + QUIRC_MAX_PAYLOAD / 4 + 1];
-        return {corners, version, ecc_level, mask, data_type, payload, payload_len, eci};
-    } finally {
-        if (code != 0) module._free(code);
-        if (data != 0) module._free(data);
+        maxNum = Math.max(maxNum, num);
+      } else {
+        maxNum = num;
+      }
+      romdata[num] = base64decode(res.slice(9));
+      prepend($("<div class='success'/>").text("success: " + num).get(0));
     }
-}
-</script>
+
+    function base64decode(str) {
+      let decodedStr = atob(str);
+      let len = decodedStr.length;
+      let buffer = new ArrayBuffer(len);
+      let array = new Uint8Array(buffer);
+      for (let i = 0; i < len; i++) {
+        array[i] = decodedStr.charCodeAt(i);
+      }
+      return buffer;
+    }
+
+    function prepend(node) {
+      if (output.childNodes.length >= MAX_OUTPUT - 1) {
+        output.removeChild(output.childNodes[output.childNodes.length - 1]);
+      }
+      if (output.childNodes.length == 0) {
+        output.appendChild(node);
+      } else {
+        output.insertBefore(node, output.childNodes[0]);
+      }
+    }
+  </script>
 </body>
+
 </html>
