@@ -56,7 +56,7 @@ void dumpQR(u16 *videoMemoryMain, int blockid, uint8_t *buf, int len)
 			int c = qr.getModule(x, y) ? 0 : 31;
 			for (int dx = 0; dx < 2; dx ++) {
 				for (int dy = 0; dy < 2; dy ++) {
-					videoMemoryMain[(2 * x + dx + 50) + (2 * y + dy + 15) * 256] = ARGB16(1, c, c, c);
+					videoMemoryMain[(2 * x + dx + 1) + (2 * y + dy + 1) * 256] = ARGB16(1, c, c, c);
 				}
 			}
 		}
@@ -79,7 +79,7 @@ void dump(void)
 	wait(0);
 	for (int i = 0x0; i < 32 * 1024 * 1024; i += BLOCK_SIZE)
 	{
-		printf("Dumping %07X...", i);
+		printf("Dumping %08X...", i);
 		dumpQR(videoMemoryMain, i / BLOCK_SIZE, ((uint8_t *)GBAROM) + i, BLOCK_SIZE);
 		if (i == 0) {
 			printf("done. push A.\n");
