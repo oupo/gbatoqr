@@ -28,6 +28,7 @@
     "@types/jquery": "^3.3.31",
     "@types/jszip": "^3.1.7",
     "file-saver": "^2.0.2",
-    "jszip": "^3.2.2"
+    "jszip": "^3.2.2",
+    "ts-custom-error": "^3.1.1"
   }
 }
