@@ -9,6 +9,16 @@ nds/source/QrSegment.hpp
 nds/source/base64.cpp
 nds/source/base64.h
 nds/build
+ndswide/source/BitBuffer.cpp
+ndswide/source/BitBuffer.cpp
+ndswide/source/BitBuffer.hpp
+ndswide/source/QrCode.cpp
+ndswide/source/QrCode.hpp
+ndswide/source/QrSegment.cpp
+ndswide/source/QrSegment.hpp
+ndswide/source/base64.cpp
+ndswide/source/base64.h
+ndswide/build
 node_modules
 .cache
 dist/
