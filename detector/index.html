@@ -44,7 +44,8 @@
     crossorigin="anonymous"></script>
   
   <script type="text/javascript" src="https://unpkg.com/@zxing/library@0.15.2"></script>
-  <script type="text/javascript" src="jszip.js"></script>
+  <script type="text/javascript" src="vendor/jszip.js"></script>
+  <script type="text/javascript" src="vendor/FileSaver.js"></script>
   <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
   <script>
     const MAX_OUTPUT = 50;
@@ -83,17 +84,6 @@
       alert("The browser does not support camera.");
     }
 
-    const anchor = document.createElement("a");
-    document.body.appendChild(anchor);
-    anchor.style = "display: none";
-    function saveData(blob, fileName) {
-      let url = window.URL.createObjectURL(blob);
-      anchor.href = url;
-      anchor.download = fileName;
-      anchor.click();
-      window.URL.revokeObjectURL(url);
-    }
-
     document.getElementById("save-button").addEventListener("click", () => {
       let zip = new JSZip();
       for (let num in romdata) {
@@ -101,7 +91,7 @@
       }
       zip.generateAsync({ type: "blob" })
         .then(function (content) {
-          saveData(content, "gbarom.zip");
+          saveAs(content, "gbarom.zip");
         });
     });
 
