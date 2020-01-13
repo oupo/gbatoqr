@@ -73,7 +73,7 @@ void dump(void)
 	u16 *videoMemoryMain = bgGetGfxPtr(bgMain);
 	for (int i = 0; i < 256 * 256; i++)
 		videoMemoryMain[i] = ARGB16(1, 31, 31, 31);
-	char name[13];
+	char name[13] = {};
 	strncpy(name, (char *)0x080000A0, 12);
 	printf("Dump target: %s\n", name);
 	wait(0);
@@ -82,7 +82,7 @@ void dump(void)
 		printf("Dumping %08X...", i);
 		dumpQR(videoMemoryMain, i / BLOCK_SIZE, ((uint8_t *)GBAROM) + i, BLOCK_SIZE);
 		if (i == 0) {
-			printf("done. push A.\n");
+			printf("done. push A\n");
 			waitKey();
 			wait(0);
 		} else {
