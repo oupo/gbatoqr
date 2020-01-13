@@ -9,4 +9,4 @@
 	url = https://github.com/ReneNyffenegger/cpp-base64.git
 [submodule "zxing-js"]
 	path = zxing-js
-	url = https://github.com/zxing-js/library.git
+	url = https://github.com/oupo/zxing-js-library.git
