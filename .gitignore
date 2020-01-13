@@ -10,3 +10,5 @@ nds/source/base64.cpp
 nds/source/base64.h
 nds/build
 node_modules
+.cache
+dist/

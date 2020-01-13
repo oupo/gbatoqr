@@ -1,0 +1,25 @@
+{
+  "name": "gbatoqr",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "parcel detector/index.html",
+    "build": "parcel build detector/index.html",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oupo/gbatoqr.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/oupo/gbatoqr/issues"
+  },
+  "homepage": "https://github.com/oupo/gbatoqr#readme",
+  "devDependencies": {
+    "parcel-bundler": "^1.12.4"
+  }
+}
