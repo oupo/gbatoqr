@@ -52,10 +52,10 @@ function main(source: CanvasImageSource) {
 
     matrixToCanvas(matrix, canvas2);
     const transform = PerspectiveTransform.quadrilateralToQuadrilateral(
-        0.5, 0.5,
-        dimX - 0.5, 0.5,
-        dimX - 0.5, dimY - 0.5,
-        0.5, dimY - 0.5,
+        0, 0,
+        dimX, 0,
+        dimX, dimY,
+        0, dimY,
         topLeft[0], topLeft[1],
         topRight[0],topRight[1],
         bottomRight[0], bottomRight[1],
@@ -158,14 +158,7 @@ function processCamera() {
     }).then(function (stream) {
         video.srcObject = stream;
         video.play().then(() => {
-            let w = video.videoWidth, h = video.videoHeight;
-            video.width = w, video.height = h;
-            canvas.width = w, canvas.height = h;
-            document.getElementById("video-container").style.width = w + "px";
-            document.getElementById("video-container").style.height = h + "px";
-            context.clearRect(0, 0, w, h);
-            context.fillStyle = "rgba(0,0,255,0.5)";
-            context.fillRect(0, 0, w, h);
+            resize(video);
             for (let i = 0; i < 4; i ++) setupFinder(i);
             
             setInterval(() => {
@@ -174,7 +167,25 @@ function processCamera() {
                 } catch(e) { console.error(e); }
             }, 100);
         });
+        video.addEventListener("resize", () => {
+            resize(video);
+        });
     });
+}
+
+function resize(video: HTMLVideoElement) {
+    const canvas = <HTMLCanvasElement>document.getElementById("canvas");
+    const context = canvas.getContext("2d");
+    let w = video.videoWidth, h = video.videoHeight;
+    video.width = w, video.height = h;
+    canvas.width = w, canvas.height = h;
+    document.getElementById("video-container").style.width = w + "px";
+    document.getElementById("video-container").style.height = h + "px";
+    document.getElementById("canvas1-container").style.width = w + "px";
+    document.getElementById("canvas1-container").style.height = h + "px";
+    context.clearRect(0, 0, w, h);
+    context.fillStyle = "rgba(0,0,255,0.5)";
+    context.fillRect(0, 0, w, h);
 }
 
 if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
