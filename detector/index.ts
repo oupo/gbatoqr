@@ -140,7 +140,12 @@ function matrixToCanvas(matrix: BitMatrix, canvas: HTMLCanvasElement = document.
 function processCamera() {
     const canvas = <HTMLCanvasElement>document.getElementById("canvas");
     const context = canvas.getContext("2d");
-    navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: "environment" } }).then(function (stream) {
+    navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: "environment",
+                 width: { ideal: 1280 },
+        }
+    }).then(function (stream) {
         video.srcObject = stream;
         video.play().then(() => {
             let w = video.videoWidth, h = video.videoHeight;
