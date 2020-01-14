@@ -5,8 +5,10 @@ import {
     QRCodeDecoder, DetectorResult, GridSamplerInstance, PerspectiveTransform,
     GridSampler,
 } from "../zxing-js/src/index";
-import * as JSZip from "jszip";
 import { saveAs } from "file-saver";
+//import * as JSZip from "jszip";
+declare global { const JSZip : any; }
+
 import * as StackBlur from "stackblur-canvas";
 import { MyGridSampler } from "./MyGridSampler"
 
