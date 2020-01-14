@@ -22,19 +22,13 @@ const img = <HTMLImageElement>document.getElementById("image");
 const expected = <HTMLImageElement>document.getElementById("expected");
 let finderPoses: Array<[number, number]> = [];
 
-function run(source: CanvasImageSource) {
+function run(canvas1: HTMLCanvasElement) {
     const threshold = Number((<HTMLInputElement>document.getElementById("threshold")).value);
-    const blurRadius = Number((<HTMLInputElement>document.getElementById("blur-radius")).value);
-    const w = <number>source.width, h = <number>source.height;
+    const w = canvas1.width, h = canvas1.height;
     const topLeft = finderPoses[0];
     const topRight = finderPoses[1];
     const bottomRight = finderPoses[2];
     const bottomLeft = finderPoses[3];
-    const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
-    const ctx = canvas1.getContext("2d");
-    canvas1.width = w, canvas1.height = h;
-    ctx.drawImage(source, 0, 0, w, h);
-    StackBlur.canvasRGBA(canvas1, 0, 0, w, h, blurRadius);
     const luminanceSource = new HTMLCanvasElementLuminanceSource(canvas1);
     const hybridBinarizer = new HybridBinarizer(luminanceSource, threshold);
     const bitmap = new BinaryBitmap(hybridBinarizer);
@@ -56,17 +50,29 @@ function run(source: CanvasImageSource) {
     return [matrix, bits];
 }
 
-function main(source: CanvasImageSource) {
-    const [matrix, bits] = run(source);
+function videoToCanvas(video: HTMLVideoElement) {
+    const blurRadius = Number((<HTMLInputElement>document.getElementById("blur-radius")).value);
+    const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
+    const ctx = canvas1.getContext("2d");
+    const w = video.width, h = video.height;
+    canvas1.width = w, canvas1.height = h;
+    ctx.drawImage(video, 0, 0, w, h);
+    StackBlur.canvasRGBA(canvas1, 0, 0, w, h, blurRadius);
+}
+
+function main(source: HTMLVideoElement) {
+    const blurRadius = Number((<HTMLInputElement>document.getElementById("blur-radius")).value);
+    const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
+    const ctx = canvas1.getContext("2d");
+    videoToCanvas(source);
+    const [matrix, bits] = run(canvas1);
     const topLeft = finderPoses[0];
     const topRight = finderPoses[1];
     const bottomRight = finderPoses[2];
     const bottomLeft = finderPoses[3];
-    const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
     const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
     const canvas3 = <HTMLCanvasElement>document.getElementById("canvas3");
     const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
-    const ctx = canvas1.getContext("2d");
     ctx.strokeStyle = "white";
     ctx.beginPath();
     ctx.moveTo(topLeft[0], topLeft[1]);
@@ -115,14 +121,15 @@ function updateFinderPos(i: number) {
     finderPoses[i] = [pos.left + FINDER_SIZE / 2, pos.top + FINDER_SIZE / 2];
 }
 
-function calculateDifference(canvas: HTMLCanvasElement, img: HTMLImageElement) {
-    let ctx = canvas.getContext("2d");
-    let srcBytes = imgToByteArray(img);
-    let imageData = ctx.getImageData(0, 0, img.width, img.height);
-    let destBytes = imageData.data;
+function calculateDifference(bits: BitMatrix, srcBytes: Uint8ClampedArray) {
+    let w = bits.getWidth(), h = bits.getHeight();
     let count = 0;
-    for (let i = 0, l = img.width * img.height * 4; i < l; i += 4) {
-        if (destBytes[i] !== srcBytes[i]) count++;
+    let i = 0;
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            if ((bits.get(x, y) ? 0 : 255) !== srcBytes[i]) count++;
+            i += 4;
+        }
     }
     return count;
 }
@@ -205,6 +212,8 @@ function processCamera() {
 }
 
 function shake(mag: number) {
+    videoToCanvas(video);
+    let bytes = imgToByteArray(expected);
     const dx = [-1, 0, 0, 1, 0];
     const dy = [0, -1, 1, 0, 0];
     let min = Infinity;
@@ -213,7 +222,7 @@ function shake(mag: number) {
         for (let j = 0; j < 5; j++)
             for (let k = 0; k < 5; k++)
                 for (let l = 0; l < 5; l++) {
-                    let num = shake0(mag, [dx[i], dy[i], dx[j], dy[j], dx[k], dy[k], dx[l], dy[l]]);
+                    let num = shake0(mag, bytes, [dx[i], dy[i], dx[j], dy[j], dx[k], dy[k], dx[l], dy[l]]);
                     if (num < min) {
                         min = num;
                         argmin = [i, j, k, l];
@@ -229,7 +238,8 @@ function shake(mag: number) {
     ];
 }
 
-function shake0(mag: number, valueToShake: number[]) {
+function shake0(mag: number, bytes: Uint8ClampedArray, valueToShake: number[]) {
+    const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
     const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
     const finderPosesBackup = finderPoses;
     finderPoses = [
@@ -238,10 +248,9 @@ function shake0(mag: number, valueToShake: number[]) {
         [finderPosesBackup[2][0] + mag * valueToShake[4], finderPosesBackup[2][1] + mag * valueToShake[5]],
         [finderPosesBackup[3][0] + mag * valueToShake[6], finderPosesBackup[3][1] + mag * valueToShake[7]],
     ];
-    const [matrix, bits] = run(video);
-    finderPoses = finderPosesBackup;
-    matrixToCanvas(bits, canvas4);
-    return calculateDifference(canvas4, expected);
+    const [matrix, bits] = run(canvas1);
+    finderPoses = finderPosesBackup;    
+    return calculateDifference(bits, bytes);
 }
 
 function resize(video: HTMLVideoElement) {
@@ -276,8 +285,13 @@ document.getElementById("save-button").addEventListener("click", () => {
         });
 });
 document.getElementById("shake").addEventListener("click", () => {
-    shake(0.5);
-    shake(0.25);
+    $("#shake").text("Shaking...");
+    setTimeout(() => {
+        shake(1);
+        shake(0.5);
+        shake(0.25);
+        $("#shake").text("Shake corner points");
+    }, 0);
 });
 
 let maxNum: number = undefined;
