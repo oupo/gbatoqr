@@ -72,11 +72,13 @@ function main(source: CanvasImageSource) {
     //console.log(qrreader.decode(bitmap));
 }
 
+const FINDER_SIZE = 30;
+
 function setupFinder(i: number) {
     const colors = ["#4287f5", "#1fdb5a", "#eda73e", "#e85fb1"];
     const defaultCoordinates = [[10, 10], [300, 10], [300, 300], [10, 300]];
     let canvas = <HTMLCanvasElement>document.getElementById("finder" + i);
-    const size = 20;
+    const size = FINDER_SIZE;
     canvas.width = canvas.height = size;
     let ctx = canvas.getContext("2d");
     ctx.strokeStyle = colors[i];
@@ -98,7 +100,7 @@ function finderPos(i: number) {
     let canvas = <HTMLCanvasElement>document.getElementById("finder" + i);
     let $canvas = $(canvas);
     let pos = $canvas.position();
-    return [pos.left + 10, pos.top + 10];
+    return [pos.left + FINDER_SIZE / 2, pos.top + FINDER_SIZE / 2];
 }
 
 function drawDifference(canvas: HTMLCanvasElement, img: HTMLImageElement) {
