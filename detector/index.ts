@@ -23,6 +23,10 @@ function main(source: CanvasImageSource) {
     const threshold = Number((<HTMLInputElement>document.getElementById("threshold")).value);
     const blurRadius = Number((<HTMLInputElement>document.getElementById("blur-radius")).value);
     const w = <number>source.width, h = <number>source.height;
+    const topLeft = finderPos(0);
+    const topRight = finderPos(1);
+    const bottomRight = finderPos(2);
+    const bottomLeft = finderPos(3);
     const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
     const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
     const canvas3 = <HTMLCanvasElement>document.getElementById("canvas3");
@@ -36,10 +40,16 @@ function main(source: CanvasImageSource) {
     let matrix = bitmap.getBlackMatrix();
     const dimX = 126;
     const dimY = 94;
-    const topLeft = finderPos(0);
-    const topRight = finderPos(1);
-    const bottomRight = finderPos(2);
-    const bottomLeft = finderPos(3);
+    
+    ctx.strokeStyle = "white";
+    ctx.beginPath();
+    ctx.moveTo(topLeft[0], topLeft[1]);
+    ctx.lineTo(topRight[0], topRight[1]);
+    ctx.lineTo(bottomRight[0], bottomRight[1]);
+    ctx.lineTo(bottomLeft[0], bottomLeft[1]);
+    ctx.closePath();
+    ctx.stroke();
+
     matrixToCanvas(matrix, canvas2);
     const transform = PerspectiveTransform.quadrilateralToQuadrilateral(
         0.5, 0.5,
@@ -62,7 +72,7 @@ function setupFinder(i: number) {
     const colors = ["#4287f5", "#1fdb5a", "#eda73e", "#e85fb1"];
     const defaultCoordinates = [[10, 10], [300, 10], [300, 300], [10, 300]];
     let canvas = <HTMLCanvasElement>document.getElementById("finder"+i);
-    const size = 15;
+    const size = 20;
     canvas.width = canvas.height = size;
     let ctx = canvas.getContext("2d");
     ctx.strokeStyle = colors[i];
@@ -84,7 +94,7 @@ function finderPos(i: number) {
     let canvas = <HTMLCanvasElement>document.getElementById("finder"+i);
     let $canvas = $(canvas);
     let pos = $canvas.position();
-    return [pos.left, pos.top];
+    return [pos.left + 10, pos.top + 10];
 }
 
 function drawDifference(canvas: HTMLCanvasElement, img: HTMLImageElement) {
@@ -142,7 +152,7 @@ function processCamera() {
     const context = canvas.getContext("2d");
     navigator.mediaDevices.getUserMedia({
         audio: false,
-        video: { facingMode: "environment",
+        video: { facingMode: "environment", 
                  width: { ideal: 1280 },
         }
     }).then(function (stream) {

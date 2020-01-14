@@ -32,6 +32,7 @@
       width: 640px;
       height: 480px;
       position: relative;
+      display: inline-block;
     }
 
     #canvas1-container > canvas {
@@ -43,10 +44,13 @@
 <body>
   <img src="expected.png" id="expected" style="display:none">
   <div id="experiment">
-      blur radius: 
+    <div>
+      blur radius:
       <input type="range" value="0" min="0" max="5" step="1" id="blur-radius">
-      threshold: 
+      threshold:
       <input type="range" value="140" min="0" max="255" step="1" id="threshold">
+    </div>
+    <canvas id="canvas3"></canvas>
     <div id="canvas1-container">
       <canvas id="canvas1"></canvas>
       <canvas id="finder0"></canvas>
@@ -55,7 +59,6 @@
       <canvas id="finder3"></canvas>
     </div>
     <canvas id="canvas2"></canvas>
-    <canvas id="canvas3"></canvas>
   </div>
   <div id="main">
     <div id="video-container">
