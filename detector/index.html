@@ -5,6 +5,9 @@
   <meta charset="utf-8">
   <title>gbatoqr experiment</title>
   <style>
+    #experiment > * {
+      float: left;
+    }
     #main {
       display: flex;
     }
@@ -32,25 +35,39 @@
       width: 640px;
       height: 480px;
       position: relative;
-      display: inline-block;
     }
 
     #canvas1-container > canvas {
       position: absolute;
     }
+    .range {
+      width: 300px;
+      height: 50px;
+      display: inline-block;
+    }
+
+    .range input {
+      width: 200px;
+      transform: scale(1.5);
+      transform-origin: 0 0;
+    }
+    
     </style>
 </head>
 
 <body>
   <img src="expected.png" id="expected" style="display:none">
+  <div>
+    blur radius:
+    <span class="range"><input type="range" value="0" min="0" max="5" step="1" id="blur-radius"></span>
+    threshold:
+    <span class="range"><input type="range" value="140" min="0" max="255" width="300" step="1" id="threshold"></span>
+  </div>
   <div id="experiment">
     <div>
-      blur radius:
-      <input type="range" value="0" min="0" max="5" step="1" id="blur-radius">
-      threshold:
-      <input type="range" value="140" min="0" max="255" step="1" id="threshold">
+    <canvas id="canvas3"></canvas><br>
+    <canvas id="canvas4"></canvas>
     </div>
-    <canvas id="canvas3"></canvas>
     <div id="canvas1-container">
       <canvas id="canvas1"></canvas>
       <canvas id="finder0"></canvas>

@@ -2,11 +2,13 @@ import {
     BrowserQRCodeReader, QRCodeReader,
     HTMLCanvasElementLuminanceSource, HybridBinarizer,
     BinaryBitmap, BitMatrix,
-    QRCodeDecoder, DetectorResult, GridSamplerInstance, PerspectiveTransform
+    QRCodeDecoder, DetectorResult, GridSamplerInstance, PerspectiveTransform,
+    GridSampler,
 } from "../zxing-js/src/index";
 import * as JSZip from "jszip";
 import { saveAs } from "file-saver";
 import * as StackBlur from "stackblur-canvas";
+import { MyGridSampler } from "./MyGridSampler"
 
 const MAX_OUTPUT = 50;
 const MAX_ROM_BYTES = 32 * 1024 * 1024;
@@ -30,6 +32,7 @@ function main(source: CanvasImageSource) {
     const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
     const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
     const canvas3 = <HTMLCanvasElement>document.getElementById("canvas3");
+    const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
     const ctx = canvas1.getContext("2d");
     canvas1.width = w, canvas1.height = h;
     ctx.drawImage(source, 0, 0, w, h);
@@ -40,7 +43,7 @@ function main(source: CanvasImageSource) {
     let matrix = bitmap.getBlackMatrix();
     const dimX = 126;
     const dimY = 94;
-    
+
     ctx.strokeStyle = "white";
     ctx.beginPath();
     ctx.moveTo(topLeft[0], topLeft[1]);
@@ -57,27 +60,28 @@ function main(source: CanvasImageSource) {
         dimX, dimY,
         0, dimY,
         topLeft[0], topLeft[1],
-        topRight[0],topRight[1],
+        topRight[0], topRight[1],
         bottomRight[0], bottomRight[1],
         bottomLeft[0], bottomLeft[1]);
-    const sampler = GridSamplerInstance.getInstance();
+    const sampler = new MyGridSampler();
     const bits = sampler.sampleGridWithTransform(matrix, dimX, dimY, transform);
     let detectorResult = new DetectorResult(bits, null);
     matrixToCanvas(bits, canvas3);
-    drawDifference(canvas3, expected);
+    matrixToCanvas(bits, canvas4);
+    drawDifference(canvas4, expected);
     //console.log(qrreader.decode(bitmap));
 }
 
 function setupFinder(i: number) {
     const colors = ["#4287f5", "#1fdb5a", "#eda73e", "#e85fb1"];
     const defaultCoordinates = [[10, 10], [300, 10], [300, 300], [10, 300]];
-    let canvas = <HTMLCanvasElement>document.getElementById("finder"+i);
+    let canvas = <HTMLCanvasElement>document.getElementById("finder" + i);
     const size = 20;
     canvas.width = canvas.height = size;
     let ctx = canvas.getContext("2d");
     ctx.strokeStyle = colors[i];
     ctx.lineWidth = 4;
-    ctx.arc(size / 2, size / 2, size /  2, 0, Math.PI * 2);
+    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
     ctx.stroke();
     $(canvas).draggable({
         drag: (ev, ui) => ondrag(ui),
@@ -91,7 +95,7 @@ function setupFinder(i: number) {
 }
 
 function finderPos(i: number) {
-    let canvas = <HTMLCanvasElement>document.getElementById("finder"+i);
+    let canvas = <HTMLCanvasElement>document.getElementById("finder" + i);
     let $canvas = $(canvas);
     let pos = $canvas.position();
     return [pos.left + 10, pos.top + 10];
@@ -105,8 +109,8 @@ function drawDifference(canvas: HTMLCanvasElement, img: HTMLImageElement) {
     for (let i = 0, l = img.width * img.height * 4; i < l; i += 4) {
         let changed = destBytes[i] == srcBytes[i] ? 0 : (destBytes[i] == 255 ? 1 : 2);
         destBytes[i] = changed == 1 ? 255 : 0;
-        destBytes[i+1] = changed == 2 ? 255 : 0;
-        destBytes[i+2] = changed >= 1 ? 255 : 0;
+        destBytes[i + 1] = changed == 2 ? 255 : 0;
+        destBytes[i + 2] = changed >= 1 ? 255 : 0;
     }
     ctx.putImageData(imageData, 0, 0);
 }
@@ -152,24 +156,25 @@ function processCamera() {
     const context = canvas.getContext("2d");
     navigator.mediaDevices.getUserMedia({
         audio: false,
-        video: { facingMode: "environment", 
-                 width: { ideal: 1280 },
+        video: {
+            facingMode: "environment",
+            width: { ideal: 1280 },
         }
     }).then(function (stream) {
         video.srcObject = stream;
         video.play().then(() => {
             resize(video);
-            for (let i = 0; i < 4; i ++) setupFinder(i);
-            
+            for (let i = 0; i < 4; i++) setupFinder(i);
+
             setInterval(() => {
                 try {
                     main(video);
-                } catch(e) { console.error(e); }
+                } catch (e) { console.error(e); }
             }, 100);
         });
-        video.addEventListener("resize", () => {
-            resize(video);
-        });
+        //video.addEventListener("resize", () => {
+        //    resize(video);
+        //});
     });
 }
 
