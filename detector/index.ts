@@ -62,7 +62,7 @@ function setupFinder(i: number) {
     const colors = ["#4287f5", "#1fdb5a", "#eda73e", "#e85fb1"];
     const defaultCoordinates = [[10, 10], [300, 10], [300, 300], [10, 300]];
     let canvas = <HTMLCanvasElement>document.getElementById("finder"+i);
-    const size = 10;
+    const size = 15;
     canvas.width = canvas.height = size;
     let ctx = canvas.getContext("2d");
     ctx.strokeStyle = colors[i];
@@ -77,7 +77,6 @@ function setupFinder(i: number) {
     canvas.style.top = defaultCoordinates[i][1] + "px";
 
     function ondrag(ui: JQueryUI.DraggableEventUIParams) {
-        console.log(finderPos(i));
     }
 }
 
