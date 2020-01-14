@@ -27,15 +27,39 @@
     #output .failed {
       background-color: #e7b5b5;
     }
+
+    #canvas1-container {
+      width: 640px;
+      height: 480px;
+      position: relative;
+    }
+
+    #canvas1-container > canvas {
+      position: absolute;
+    }
     </style>
 </head>
 
 <body>
-    <img src="20200113_200515.jpg" id="image" style="display:none">
-    <img src="expected.png" id="expected" style="display:none">
+  <img src="expected.png" id="expected" style="display:none">
+  <div id="experiment">
+      blur radius: 
+      <input type="range" value="0" min="0" max="5" step="1" id="blur-radius">
+      threshold: 
+      <input type="range" value="140" min="0" max="255" step="1" id="threshold">
+    <div id="canvas1-container">
+      <canvas id="canvas1"></canvas>
+      <canvas id="finder0"></canvas>
+      <canvas id="finder1"></canvas>
+      <canvas id="finder2"></canvas>
+      <canvas id="finder3"></canvas>
+    </div>
+    <canvas id="canvas2"></canvas>
+    <canvas id="canvas3"></canvas>
+  </div>
   <div id="main">
     <div id="video-container">
-      <video id="video" width="800" height="600"></video>
+      <video id="video" width="800" height="600" style="display:none"></video>
       <canvas width="800" height="600" id="canvas" style="display:none"></canvas>
     </div>
     <div id="output">
@@ -44,7 +68,9 @@
   <div><button id="save-button">Save as zip</button></div>
   <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
     crossorigin="anonymous"></script>
-  
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js" integrity="sha256-T0Vest3yCU7pafRw9r+settMBX6JkKN06dqBnpQ8d30="
+    crossorigin="anonymous"></script>
+
   <!--<script type="text/javascript" src="https://unpkg.com/@zxing/library@0.15.2"></script>-->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stackblur-canvas/2.2.0/stackblur.js"></script>
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.2.2/jszip.js"></script>

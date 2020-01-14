@@ -19,30 +19,33 @@ const qrreader = new QRCodeReader();
 const img = <HTMLImageElement>document.getElementById("image");
 const expected = <HTMLImageElement>document.getElementById("expected");
 
-function main() {
-    const w = img.width, h = img.height;
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = w, canvas.height = h;
-    ctx.drawImage(img, 0, 0, w, h);
-    //StackBlur.canvasRGBA(canvas, 0, 0, w, h, 1);
-    const luminanceSource = new HTMLCanvasElementLuminanceSource(canvas);
-    drawGrayscale(canvas, luminanceSource);
-    const hybridBinarizer = new HybridBinarizer(luminanceSource, 140);
+function main(source: CanvasImageSource) {
+    const threshold = Number((<HTMLInputElement>document.getElementById("threshold")).value);
+    const blurRadius = Number((<HTMLInputElement>document.getElementById("blur-radius")).value);
+    const w = <number>source.width, h = <number>source.height;
+    const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
+    const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
+    const canvas3 = <HTMLCanvasElement>document.getElementById("canvas3");
+    const ctx = canvas1.getContext("2d");
+    canvas1.width = w, canvas1.height = h;
+    ctx.drawImage(source, 0, 0, w, h);
+    StackBlur.canvasRGBA(canvas1, 0, 0, w, h, blurRadius);
+    const luminanceSource = new HTMLCanvasElementLuminanceSource(canvas1);
+    const hybridBinarizer = new HybridBinarizer(luminanceSource, threshold);
     const bitmap = new BinaryBitmap(hybridBinarizer);
     let matrix = bitmap.getBlackMatrix();
-    document.body.appendChild(matrixToCanvas(matrix));
     const dimX = 126;
     const dimY = 94;
-    const topLeft = [372, 467];
-    const topRight = [1521, 494];
-    const bottomLeft = [350, 1305];
-    const bottomRight = [1544, 1375];
+    const topLeft = finderPos(0);
+    const topRight = finderPos(1);
+    const bottomRight = finderPos(2);
+    const bottomLeft = finderPos(3);
+    matrixToCanvas(matrix, canvas2);
     const transform = PerspectiveTransform.quadrilateralToQuadrilateral(
-        3.5, 3.5,
-        dimX - 3.5, 3.5,
-        dimX - 0, dimY - 0,
-        3.5, dimY - 3.5,
+        0.5, 0.5,
+        dimX - 0.5, 0.5,
+        dimX - 0.5, dimY - 0.5,
+        0.5, dimY - 0.5,
         topLeft[0], topLeft[1],
         topRight[0],topRight[1],
         bottomRight[0], bottomRight[1],
@@ -50,10 +53,39 @@ function main() {
     const sampler = GridSamplerInstance.getInstance();
     const bits = sampler.sampleGridWithTransform(matrix, dimX, dimY, transform);
     let detectorResult = new DetectorResult(bits, null);
-    let canvas2 = matrixToCanvas(bits);
-    drawDifference(canvas2, expected);
-    document.body.appendChild(canvas2);
+    matrixToCanvas(bits, canvas3);
+    drawDifference(canvas3, expected);
     //console.log(qrreader.decode(bitmap));
+}
+
+function setupFinder(i: number) {
+    const colors = ["#4287f5", "#1fdb5a", "#eda73e", "#e85fb1"];
+    const defaultCoordinates = [[10, 10], [300, 10], [300, 300], [10, 300]];
+    let canvas = <HTMLCanvasElement>document.getElementById("finder"+i);
+    const size = 10;
+    canvas.width = canvas.height = size;
+    let ctx = canvas.getContext("2d");
+    ctx.strokeStyle = colors[i];
+    ctx.lineWidth = 4;
+    ctx.arc(size / 2, size / 2, size /  2, 0, Math.PI * 2);
+    ctx.stroke();
+    $(canvas).draggable({
+        drag: (ev, ui) => ondrag(ui),
+        stop: (ev, ui) => ondrag(ui),
+    });
+    canvas.style.left = defaultCoordinates[i][0] + "px";
+    canvas.style.top = defaultCoordinates[i][1] + "px";
+
+    function ondrag(ui: JQueryUI.DraggableEventUIParams) {
+        console.log(finderPos(i));
+    }
+}
+
+function finderPos(i: number) {
+    let canvas = <HTMLCanvasElement>document.getElementById("finder"+i);
+    let $canvas = $(canvas);
+    let pos = $canvas.position();
+    return [pos.left, pos.top];
 }
 
 function drawDifference(canvas: HTMLCanvasElement, img: HTMLImageElement) {
@@ -81,7 +113,7 @@ function imgToByteArray(img: HTMLImageElement) {
 function drawGrayscale(canvas: HTMLCanvasElement, luminanceSource: HTMLCanvasElementLuminanceSource) {
     const ctx = canvas.getContext("2d");
     const w = canvas.width, h = canvas.height;
-    const grayScaleBuf = luminanceSource.buffer;
+    const grayScaleBuf = luminanceSource.getMatrix();
     const buf = new Uint8ClampedArray(w * h * 4);
     for (let i = 0, j = 0, l = w * h; j < l; j++ , i += 4) {
         buf[i] = buf[i + 1] = buf[i + 2] = grayScaleBuf[j];
@@ -90,8 +122,7 @@ function drawGrayscale(canvas: HTMLCanvasElement, luminanceSource: HTMLCanvasEle
     ctx.putImageData(new ImageData(buf, w, h), 0, 0);
 }
 
-function matrixToCanvas(matrix: BitMatrix) {
-    const canvas = document.createElement("canvas");
+function matrixToCanvas(matrix: BitMatrix, canvas: HTMLCanvasElement = document.createElement("canvas")) {
     const ctx = canvas.getContext("2d");
     let w = canvas.width = matrix.getWidth(), h = canvas.height = matrix.getHeight();
     const buf = new Uint8ClampedArray(w * h * 4);
@@ -107,28 +138,12 @@ function matrixToCanvas(matrix: BitMatrix) {
     return canvas;
 }
 
-if (img.complete) {
-    main();
-} else {
-    img.addEventListener("load", () => {
-        main();
-    });
-}
-
 function processCamera() {
     const canvas = <HTMLCanvasElement>document.getElementById("canvas");
     const context = canvas.getContext("2d");
     navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: "environment" } }).then(function (stream) {
-        codeReader.decodeFromStream(stream, video, (res) => {
-            try {
-                if (res) {
-                    handleResponse(res.getText());
-                    canvas.style.display = "";
-                } else {
-                    canvas.style.display = "none";
-                }
-            } catch (e) { console.error(e); }
-        }).then(() => {
+        video.srcObject = stream;
+        video.play().then(() => {
             let w = video.videoWidth, h = video.videoHeight;
             video.width = w, video.height = h;
             canvas.width = w, canvas.height = h;
@@ -137,12 +152,19 @@ function processCamera() {
             context.clearRect(0, 0, w, h);
             context.fillStyle = "rgba(0,0,255,0.5)";
             context.fillRect(0, 0, w, h);
-        })
+            for (let i = 0; i < 4; i ++) setupFinder(i);
+            
+            setInterval(() => {
+                try {
+                    main(video);
+                } catch(e) { console.error(e); }
+            }, 100);
+        });
     });
 }
 
 if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    //processCamera();
+    processCamera();
 } else {
     alert("The browser does not support camera.");
 }
