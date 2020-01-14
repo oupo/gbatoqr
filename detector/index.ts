@@ -20,19 +20,17 @@ const output = document.getElementById("output");
 const qrreader = new QRCodeReader();
 const img = <HTMLImageElement>document.getElementById("image");
 const expected = <HTMLImageElement>document.getElementById("expected");
+let finderPoses: Array<[number, number]> = [];
 
-function main(source: CanvasImageSource) {
+function run(source: CanvasImageSource) {
     const threshold = Number((<HTMLInputElement>document.getElementById("threshold")).value);
     const blurRadius = Number((<HTMLInputElement>document.getElementById("blur-radius")).value);
     const w = <number>source.width, h = <number>source.height;
-    const topLeft = finderPos(0);
-    const topRight = finderPos(1);
-    const bottomRight = finderPos(2);
-    const bottomLeft = finderPos(3);
+    const topLeft = finderPoses[0];
+    const topRight = finderPoses[1];
+    const bottomRight = finderPoses[2];
+    const bottomLeft = finderPoses[3];
     const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
-    const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
-    const canvas3 = <HTMLCanvasElement>document.getElementById("canvas3");
-    const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
     const ctx = canvas1.getContext("2d");
     canvas1.width = w, canvas1.height = h;
     ctx.drawImage(source, 0, 0, w, h);
@@ -43,17 +41,6 @@ function main(source: CanvasImageSource) {
     let matrix = bitmap.getBlackMatrix();
     const dimX = 126;
     const dimY = 94;
-
-    ctx.strokeStyle = "white";
-    ctx.beginPath();
-    ctx.moveTo(topLeft[0], topLeft[1]);
-    ctx.lineTo(topRight[0], topRight[1]);
-    ctx.lineTo(bottomRight[0], bottomRight[1]);
-    ctx.lineTo(bottomLeft[0], bottomLeft[1]);
-    ctx.closePath();
-    ctx.stroke();
-
-    matrixToCanvas(matrix, canvas2);
     const transform = PerspectiveTransform.quadrilateralToQuadrilateral(
         0, 0,
         dimX, 0,
@@ -66,10 +53,32 @@ function main(source: CanvasImageSource) {
     const sampler = new MyGridSampler();
     const bits = sampler.sampleGridWithTransform(matrix, dimX, dimY, transform);
     let detectorResult = new DetectorResult(bits, null);
+    return [matrix, bits];
+}
+
+function main(source: CanvasImageSource) {
+    const [matrix, bits] = run(source);
+    const topLeft = finderPoses[0];
+    const topRight = finderPoses[1];
+    const bottomRight = finderPoses[2];
+    const bottomLeft = finderPoses[3];
+    const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
+    const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
+    const canvas3 = <HTMLCanvasElement>document.getElementById("canvas3");
+    const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
+    const ctx = canvas1.getContext("2d");
+    ctx.strokeStyle = "white";
+    ctx.beginPath();
+    ctx.moveTo(topLeft[0], topLeft[1]);
+    ctx.lineTo(topRight[0], topRight[1]);
+    ctx.lineTo(bottomRight[0], bottomRight[1]);
+    ctx.lineTo(bottomLeft[0], bottomLeft[1]);
+    ctx.closePath();
+    ctx.stroke();
+    matrixToCanvas(matrix, canvas2);
     matrixToCanvas(bits, canvas3);
     matrixToCanvas(bits, canvas4);
     drawDifference(canvas4, expected);
-    //console.log(qrreader.decode(bitmap));
 }
 
 const FINDER_SIZE = 30;
@@ -93,14 +102,29 @@ function setupFinder(i: number) {
     canvas.style.top = defaultCoordinates[i][1] + "px";
 
     function ondrag(ui: JQueryUI.DraggableEventUIParams) {
+        updateFinderPos(i);
     }
+
+    updateFinderPos(i);
 }
 
-function finderPos(i: number) {
+function updateFinderPos(i: number) {
     let canvas = <HTMLCanvasElement>document.getElementById("finder" + i);
     let $canvas = $(canvas);
     let pos = $canvas.position();
-    return [pos.left + FINDER_SIZE / 2, pos.top + FINDER_SIZE / 2];
+    finderPoses[i] = [pos.left + FINDER_SIZE / 2, pos.top + FINDER_SIZE / 2];
+}
+
+function calculateDifference(canvas: HTMLCanvasElement, img: HTMLImageElement) {
+    let ctx = canvas.getContext("2d");
+    let srcBytes = imgToByteArray(img);
+    let imageData = ctx.getImageData(0, 0, img.width, img.height);
+    let destBytes = imageData.data;
+    let count = 0;
+    for (let i = 0, l = img.width * img.height * 4; i < l; i += 4) {
+        if (destBytes[i] !== srcBytes[i]) count++;
+    }
+    return count;
 }
 
 function drawDifference(canvas: HTMLCanvasElement, img: HTMLImageElement) {
@@ -180,6 +204,46 @@ function processCamera() {
     });
 }
 
+function shake(mag: number) {
+    const dx = [-1, 0, 0, 1, 0];
+    const dy = [0, -1, 1, 0, 0];
+    let min = Infinity;
+    let argmin: number[] = null;
+    for (let i = 0; i < 5; i++)
+        for (let j = 0; j < 5; j++)
+            for (let k = 0; k < 5; k++)
+                for (let l = 0; l < 5; l++) {
+                    let num = shake0(mag, [dx[i], dy[i], dx[j], dy[j], dx[k], dy[k], dx[l], dy[l]]);
+                    if (num < min) {
+                        min = num;
+                        argmin = [i, j, k, l];
+                    }
+    }
+    let [i, j, k, l] = argmin;
+    let valueToShake = [dx[i], dy[i], dx[j], dy[j], dx[k], dy[k], dx[l], dy[l]]
+    finderPoses = [
+        [finderPoses[0][0] + mag * valueToShake[0], finderPoses[0][1] + mag * valueToShake[1]],
+        [finderPoses[1][0] + mag * valueToShake[2], finderPoses[1][1] + mag * valueToShake[3]],
+        [finderPoses[2][0] + mag * valueToShake[4], finderPoses[2][1] + mag * valueToShake[5]],
+        [finderPoses[3][0] + mag * valueToShake[6], finderPoses[3][1] + mag * valueToShake[7]],
+    ];
+}
+
+function shake0(mag: number, valueToShake: number[]) {
+    const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
+    const finderPosesBackup = finderPoses;
+    finderPoses = [
+        [finderPosesBackup[0][0] + mag * valueToShake[0], finderPosesBackup[0][1] + mag * valueToShake[1]],
+        [finderPosesBackup[1][0] + mag * valueToShake[2], finderPosesBackup[1][1] + mag * valueToShake[3]],
+        [finderPosesBackup[2][0] + mag * valueToShake[4], finderPosesBackup[2][1] + mag * valueToShake[5]],
+        [finderPosesBackup[3][0] + mag * valueToShake[6], finderPosesBackup[3][1] + mag * valueToShake[7]],
+    ];
+    const [matrix, bits] = run(video);
+    finderPoses = finderPosesBackup;
+    matrixToCanvas(bits, canvas4);
+    return calculateDifference(canvas4, expected);
+}
+
 function resize(video: HTMLVideoElement) {
     const canvas = <HTMLCanvasElement>document.getElementById("canvas");
     const context = canvas.getContext("2d");
@@ -201,8 +265,6 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     alert("The browser does not support camera.");
 }
 
-
-
 document.getElementById("save-button").addEventListener("click", () => {
     let zip = new JSZip();
     for (let num in romdata) {
@@ -212,6 +274,10 @@ document.getElementById("save-button").addEventListener("click", () => {
         .then(function (content) {
             saveAs(content, "gbarom.zip");
         });
+});
+document.getElementById("shake").addEventListener("click", () => {
+    shake(0.5);
+    shake(0.25);
 });
 
 let maxNum: number = undefined;
