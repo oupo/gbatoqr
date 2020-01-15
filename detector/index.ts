@@ -10,7 +10,8 @@ import { saveAs } from "file-saver";
 declare global { const JSZip : any; }
 
 import * as StackBlur from "stackblur-canvas";
-import { MyGridSampler } from "./MyGridSampler"
+import { MyGridSampler } from "./MyGridSampler";
+import { WideQRDecoder } from "./WideQRDecoder";
 
 const MAX_OUTPUT = 50;
 const MAX_ROM_BYTES = 32 * 1024 * 1024;
@@ -23,6 +24,30 @@ const qrreader = new QRCodeReader();
 const img = <HTMLImageElement>document.getElementById("image");
 const expected = <HTMLImageElement>document.getElementById("expected");
 let finderPoses: Array<[number, number]> = [];
+
+test();
+
+function test() {
+    let byteArray = imgToByteArray(expected);
+    let w = expected.width, h = expected.height;
+    let bits = new BitMatrix(w, h);
+    let i = 0;
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            if (byteArray[i] === 0) {
+                bits.set(x, y);
+            }
+            i += 4;
+        }
+    }
+    console.log(bits);
+    let result = new WideQRDecoder().decodeBitMatrix(bits);
+    let text = result.getText();
+    let buffer = new ArrayBuffer(text.length);
+    let array8 = new Uint8Array(buffer);
+    for (let i = 0; i < text.length; i++) array8[i] = text.charCodeAt(i);
+    console.log(array8);
+}
 
 function run(canvas1: HTMLCanvasElement) {
     const threshold = Number((<HTMLInputElement>document.getElementById("threshold")).value);

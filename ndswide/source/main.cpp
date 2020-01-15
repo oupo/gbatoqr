@@ -56,9 +56,9 @@ void dumpQR(u16 *videoMemoryMain, int blockid, uint8_t *buf, int len)
 	const QrCode qr = QrCode::encodeSegmentsWide(segs, mask);
 
 	int w = qr.getWidth(), h = qr.getHeight();
-	for (int y = -1; y < h + 1; y++)
+	for (int y = 0; y < h; y++)
 	{
-		for (int x = -1; x < w + 1; x++)
+		for (int x = 0; x < w; x++)
 		{
 			int c = qr.getModule(x, y) ? 0 : 31;
 			fillRect(videoMemoryMain, 2 * x + 2, 2 * y + 2, 2, 2, ARGB16(1, c, c, c));
@@ -87,9 +87,9 @@ void dumpQR2(u16 *videoMemoryMain, int blockid1, int blockid2, uint8_t *buf1, ui
 	QrCode qr1 = makeQR(blockid1, buf1, len);
 	QrCode qr2 = makeQR(blockid2, buf2, len);
 	int w = qr1.getWidth(), h = qr1.getHeight();
-	for (int y = -1; y < h + 1; y++)
+	for (int y = 0; y < h; y++)
 	{
-		for (int x = -1; x < w + 1; x++)
+		for (int x = 0; x < w; x++)
 		{
 			int c1 = qr1.getModule(x, y) ? 0 : 31;
 			int c2 = qr2.getModule(x, y) ? 0 : 31;
@@ -103,7 +103,7 @@ void dumpQR2(u16 *videoMemoryMain, int blockid1, int blockid2, uint8_t *buf1, ui
 	fillRect(videoMemoryMain, 2, 192 - 6, 4, 4, ARGB16(1, 28, 11, 21));
 }
 
-const int BLOCK_SIZE = 0x1c0;
+const int BLOCK_SIZE = 0x480;
 
 void writeRandomData(std::vector<uint8_t> &data, uint32_t seed) {
 	data.resize(BLOCK_SIZE);
@@ -134,20 +134,14 @@ void dump(void)
 	waitKey();
 	char name[13] = {};
 	strncpy(name, (char *)0x080000A0, 12);
-	printf("Dump target: %s\n", name);
+	printf("Target to dump: %s\n", name);
 	wait(0);
 	for (int i = 0x0; i < 32 * 1024 * 1024; i += BLOCK_SIZE)
 	{
 		printf("Dumping %08X...", i);
 		dumpQR(videoMemoryMain, i / BLOCK_SIZE, ((uint8_t *)GBAROM) + i, BLOCK_SIZE);
-		if (i == 0) {
-			printf("done. push A\n");
-			waitKey();
-			wait(0);
-		} else {
-			printf("done\n");
-			wait(60 * 1);
-		}
+		printf("done\n");
+		wait(60 * 1);
 	}
 	printf("Done!\n");
 }
