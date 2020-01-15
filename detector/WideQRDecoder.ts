@@ -30,7 +30,6 @@ export class WideQRDecoder {
 
     private decodeBitMatrixParser(parser: WideQRBitMatrixParser, hints: Map<DecodeHintType, any>): DecoderResult {
         const codewords = parser.readCodewords();
-        console.log(codewords);
         const dataBlocks = QRCodeDataBlock.getDataBlocks(codewords, REAL_VER, QRCodeErrorCorrectionLevel.L);
         let totalBytes = 0;
         for (const dataBlock of dataBlocks) {

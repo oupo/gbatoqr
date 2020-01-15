@@ -3,7 +3,7 @@ import {
     HTMLCanvasElementLuminanceSource, HybridBinarizer,
     BinaryBitmap, BitMatrix,
     QRCodeDecoder, DetectorResult, GridSamplerInstance, PerspectiveTransform,
-    GridSampler,
+    GridSampler, ChecksumException
 } from "../zxing-js/src/index";
 import { saveAs } from "file-saver";
 //import * as JSZip from "jszip";
@@ -25,7 +25,7 @@ const img = <HTMLImageElement>document.getElementById("image");
 const expected = <HTMLImageElement>document.getElementById("expected");
 let finderPoses: Array<[number, number]> = [];
 
-test();
+//test();
 
 function test() {
     let byteArray = imgToByteArray(expected);
@@ -112,6 +112,13 @@ function main(source: HTMLVideoElement) {
     matrixToCanvas(bits, canvas3);
     matrixToCanvas(bits, canvas4);
     drawDifference(canvas4, expected);
+
+    try {
+        let result = new WideQRDecoder().decodeBitMatrix(bits);
+        handleResponse(result.getText());
+    } catch(e) {
+        if (!(e instanceof ChecksumException)) console.error(e);
+    }
 }
 
 const FINDER_SIZE = 30;
@@ -323,6 +330,8 @@ document.getElementById("shake").addEventListener("click", () => {
 
 let maxNum: number = undefined;
 
+let succeededTestData = false;
+
 function handleResponse(res: string) {
     let buffer = new ArrayBuffer(res.length);
     let array8 = new Uint8Array(buffer);
@@ -330,6 +339,10 @@ function handleResponse(res: string) {
     let array32 = new Uint32Array(buffer);
     for (let i = 0; i < res.length; i++) array8[i] = res.charCodeAt(i);
     let num = array32[0];
+    if (num == 0xffffffff && !succeededTestData) {
+        prepend($("<div class='success'/>").text("success: test data").get(0));
+        succeededTestData = true;
+    }
     if (!(0 <= num && num < Math.ceil(MAX_ROM_BYTES / BLOCK_SIZE))) return;
     if (romdata[num]) return;
     if (maxNum !== undefined) {

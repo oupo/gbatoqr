@@ -108,11 +108,11 @@ const int BLOCK_SIZE = 0x480;
 void writeRandomData(std::vector<uint8_t> &data, uint32_t seed) {
 	data.resize(BLOCK_SIZE);
 	for (int i = 0; i < BLOCK_SIZE / 4; i ++) {
-		seed = seed * 0x41c64e6d + 0x6073;
 		data[i*4+0] = seed & 0xff;
 		data[i*4+1] = (seed >> 8) & 0xff;
 		data[i*4+2] = (seed >> 16) & 0xff;
 		data[i*4+3] = (seed >> 24) & 0xff;
+		seed = seed * 0x41c64e6d + 0x6073;
 	}
 }
 
@@ -126,7 +126,7 @@ void dump(void)
 		videoMemoryMain[i] = ARGB16(1, 31, 31, 31);
 	std::vector<uint8_t> testdata;
 	writeRandomData(testdata, 0xdeadbeef);
-	dumpQR(videoMemoryMain, 0, &testdata[0], BLOCK_SIZE);
+	dumpQR(videoMemoryMain, 0xffffffff, &testdata[0], BLOCK_SIZE);
 /*	std::vector<uint8_t> testdata2;
 	writeRandomData(testdata2, 0xcafecafe);
 	dumpQR2(videoMemoryMain, 0, 1, &testdata[0], &testdata2[0], BLOCK_SIZE); */
