@@ -14,12 +14,20 @@ using std::uint8_t;
 int frameCount = 0;
 int lastFrameCount = 0;
 
-void Vblank() {
+void Vblank()
+{
 	frameCount++;
 }
 
-void wait(int count) {
-	while (frameCount - lastFrameCount < count) {
+void OnKeyPressed(int key) {
+   if(key > 0)
+      iprintf("%c", key);
+}
+
+void wait(int count)
+{
+	while (frameCount - lastFrameCount < count)
+	{
 		swiWaitForVBlank();
 	}
 	lastFrameCount = frameCount;
@@ -35,9 +43,12 @@ void waitKey()
 	}
 }
 
-void fillRect(u16 *videoMemory, int x, int y, int w, int h, u16 c) {
-	for (int dx = 0; dx < w; dx ++) {
-		for (int dy = 0; dy < h; dy ++) {
+void fillRect(u16 *videoMemory, int x, int y, int w, int h, u16 c)
+{
+	for (int dx = 0; dx < w; dx++)
+	{
+		for (int dy = 0; dy < h; dy++)
+		{
 			videoMemory[x + dx + (y + dy) * 256] = c;
 		}
 	}
@@ -70,7 +81,8 @@ void dumpQR(u16 *videoMemoryMain, int blockid, uint8_t *buf, int len)
 	fillRect(videoMemoryMain, 2, 192 - 6, 4, 4, ARGB16(1, 28, 11, 21));
 }
 
-QrCode makeQR(int blockid, uint8_t *buf, int len) {
+QrCode makeQR(int blockid, uint8_t *buf, int len)
+{
 	std::vector<uint8_t> vec(4 + len);
 	vec[0] = blockid & 0xff;
 	vec[1] = (blockid >> 8) & 0xff;
@@ -105,18 +117,20 @@ void dumpQR2(u16 *videoMemoryMain, int blockid1, int blockid2, uint8_t *buf1, ui
 
 const int BLOCK_SIZE = 0x480;
 
-void writeRandomData(std::vector<uint8_t> &data, uint32_t seed) {
+void writeRandomData(std::vector<uint8_t> &data, uint32_t seed)
+{
 	data.resize(BLOCK_SIZE);
-	for (int i = 0; i < BLOCK_SIZE / 4; i ++) {
-		data[i*4+0] = seed & 0xff;
-		data[i*4+1] = (seed >> 8) & 0xff;
-		data[i*4+2] = (seed >> 16) & 0xff;
-		data[i*4+3] = (seed >> 24) & 0xff;
+	for (int i = 0; i < BLOCK_SIZE / 4; i++)
+	{
+		data[i * 4 + 0] = seed & 0xff;
+		data[i * 4 + 1] = (seed >> 8) & 0xff;
+		data[i * 4 + 2] = (seed >> 16) & 0xff;
+		data[i * 4 + 3] = (seed >> 24) & 0xff;
 		seed = seed * 0x41c64e6d + 0x6073;
 	}
 }
 
-void dump(void)
+void dump(int dumpsize)
 {
 	videoSetMode(MODE_5_2D);
 	vramSetBankA(VRAM_A_MAIN_BG);
@@ -127,7 +141,7 @@ void dump(void)
 	std::vector<uint8_t> testdata;
 	writeRandomData(testdata, 0xdeadbeef);
 	dumpQR(videoMemoryMain, 0xffffffff, &testdata[0], BLOCK_SIZE);
-/*	std::vector<uint8_t> testdata2;
+	/*	std::vector<uint8_t> testdata2;
 	writeRandomData(testdata2, 0xcafecafe);
 	dumpQR2(videoMemoryMain, 0, 1, &testdata[0], &testdata2[0], BLOCK_SIZE); */
 	printf("drawed test data. push A\n");
@@ -136,11 +150,15 @@ void dump(void)
 	strncpy(name, (char *)0x080000A0, 12);
 	printf("Target to dump: %s\n", name);
 	wait(0);
-	for (int i = 0x0; i < 32 * 1024 * 1024; i += BLOCK_SIZE)
+	for (int i = 0x0; i < dumpsize * 1024; i += BLOCK_SIZE)
 	{
 		printf("Dumping %08X...", i);
 		dumpQR(videoMemoryMain, i / BLOCK_SIZE, ((uint8_t *)GBAROM) + i, BLOCK_SIZE);
 		printf("done\n");
+		scanKeys();
+		if (keysDown() & KEY_START) {
+			return;
+		}
 		wait(60 * 1);
 	}
 	printf("Done!\n");
@@ -150,14 +168,18 @@ int main(void)
 {
 	irqSet(IRQ_VBLANK, Vblank);
 	consoleDemoInit();
+	Keyboard *kbd = keyboardDemoInit();
+	kbd->OnKeyPressed = OnKeyPressed;
 	videoSetMode(MODE_FB0);
 	vramSetBankA(VRAM_A_LCD);
 	sysSetCartOwner(1);
-	dump();
 
-	while (1)
-	{
-		swiWaitForVBlank();
+	while (1) {
+		int dumpsize;
+		printf("Input size to dump (KB) >");
+		scanf("%d", &dumpsize);
+		dumpsize = std::max(std::min(dumpsize, 32 * 1024), 1);
+		dump(dumpsize);
 	}
 
 	return 0;
