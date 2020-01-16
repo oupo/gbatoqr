@@ -111,12 +111,12 @@ function main(source: HTMLVideoElement) {
     matrixToCanvas(bits, canvas4);
     drawDifference(canvas4, expected);
 
-    try {
+/*    try {
         let result = new WideQRDecoder().decodeBitMatrix(bits);
         handleResponse(result.getText());
     } catch(e) {
         if (!(e instanceof ChecksumException)) console.error(e);
-    }
+    } */
 }
 
 const FINDER_SIZE = 30;
