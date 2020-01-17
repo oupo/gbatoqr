@@ -90,14 +90,10 @@ function main(source: HTMLVideoElement) {
     const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
     const ctx = canvas1.getContext("2d");
     videoToCanvas(source);
-    const [matrix, bits] = run(canvas1);
     const topLeft = finderPoses[0];
     const topRight = finderPoses[1];
     const bottomRight = finderPoses[2];
     const bottomLeft = finderPoses[3];
-    const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
-    const canvas3 = <HTMLCanvasElement>document.getElementById("canvas3");
-    const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
     ctx.strokeStyle = "red";
     ctx.beginPath();
     ctx.moveTo(topLeft[0], topLeft[1]);
@@ -106,18 +102,21 @@ function main(source: HTMLVideoElement) {
     ctx.lineTo(bottomLeft[0], bottomLeft[1]);
     ctx.closePath();
     ctx.stroke();
+    if (!started) return;
+    const [matrix, bits] = run(canvas1);
+    const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
+    const canvas3 = <HTMLCanvasElement>document.getElementById("canvas3");
+    const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
     matrixToCanvas(matrix, canvas2);
     matrixToCanvas(bits, canvas3);
     matrixToCanvas(bits, canvas4);
     drawDifference(canvas4, expected);
 
-    if (started) {
-        try {
-            let result = new WideQRDecoder().decodeBitMatrix(bits);
-            handleResponse(result.getByteSegments()[0]);
-        } catch(e) {
-            if (!(e instanceof ChecksumException)) console.error(e);
-        }
+    try {
+        let result = new WideQRDecoder().decodeBitMatrix(bits);
+        handleResponse(result.getByteSegments()[0]);
+    } catch(e) {
+        if (!(e instanceof ChecksumException)) console.error(e);
     }
 }
 
