@@ -1,7 +1,6 @@
 # gbatoqr
 
-![](https://user-images.githubusercontent.com/143470/72619458-aaa8ae80-3980-11ea-83f2-c030b4c4b078.png)
-
+<img src="https://user-images.githubusercontent.com/143470/72619458-aaa8ae80-3980-11ea-83f2-c030b4c4b078.png"> <img src="https://user-images.githubusercontent.com/143470/72619668-24d93300-3981-11ea-9ce4-e2ab26be1bf5.png" width="300">
 
 This repository consists of the following two programs.
 
