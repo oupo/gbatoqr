@@ -5,18 +5,12 @@
   <meta charset="utf-8">
   <title>gbatoqr experiment</title>
   <style>
+    #experiment::before, #experiment::after {
+        content: ""; display: table;
+    }
+    #experiment:after{ clear: both; }
     #experiment > * {
       float: left;
-    }
-    #main {
-      display: flex;
-    }
-    #video-container {
-      width: 800px;
-      height: 600px;
-    }
-    #video-container > * {
-      position: absolute;
     }
 
     #output > div {
@@ -40,16 +34,30 @@
     #canvas1-container > canvas {
       position: absolute;
     }
-    .range {
-      width: 300px;
+    .range-blur, .range-threshold {
       height: 50px;
       display: inline-block;
     }
 
-    .range input {
-      width: 200px;
-      transform: scale(1.5);
+    .range-blur input, .range-threshold input {
+      transform: scale(2);
       transform-origin: 0 0;
+    }
+
+    .range-blur {
+      width: 100px;
+    }
+
+  .range-blur input {
+    width: 50px;
+  }
+
+    .range-threshold {
+      width: 600px;
+    }
+
+    .range-threshold input {
+      width: 300px;
     }
     
     </style>
@@ -59,43 +67,38 @@
   <img src="expected2.png" id="expected" style="display:none">
   <div>
     blur radius:
-    <span class="range"><input type="range" value="0" min="0" max="5" step="1" id="blur-radius"></span>
+    <span class="range-blur"><input type="range" value="0" min="0" max="5" step="1" id="blur-radius"></span>
     threshold:
-    <span class="range"><input type="range" value="140" min="0" max="255" width="300" step="1" id="threshold"></span>
-    <button id="shake">Shake corner points</button>
+    <span class="range-threshold"><input type="range" value="140" min="0" max="255" width="300" step="1" id="threshold"></span><br>
     <button id="start">Start</button>
+    <button id="shake">Shake corner points</button>
     <button id="reset">Reset</button>
+    <button id="save-button">Save as zip</button>
   </div>
   <div id="experiment">
     <div>
-    <canvas id="canvas3"></canvas><br>
-    <canvas id="canvas4"></canvas>
+      <canvas id="canvas3"></canvas><br>
+      <canvas id="canvas4"></canvas>
     </div>
-    <div id="canvas1-container">
-      <canvas id="canvas1"></canvas>
-      <canvas id="finder0"></canvas>
-      <canvas id="finder1"></canvas>
-      <canvas id="finder2"></canvas>
-      <canvas id="finder3"></canvas>
-    </div>
-    <canvas id="canvas2"></canvas>
-  </div>
-  <div id="main">
-    <div id="video-container">
-      <video id="video" width="800" height="600" style="display:none"></video>
-      <canvas width="800" height="600" id="canvas" style="display:none"></canvas>
+    <div>
+      <div id="canvas1-container">
+        <canvas id="canvas1"></canvas>
+        <canvas id="finder0"></canvas>
+        <canvas id="finder1"></canvas>
+        <canvas id="finder2"></canvas>
+        <canvas id="finder3"></canvas>
+      </div>
+      <div><canvas id="canvas2"></canvas></div>
     </div>
     <div id="output">
     </div>
   </div>
-  <div><button id="save-button">Save as zip</button></div>
+  <video id="video" width="800" height="600" style="display:none"></video>
   <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
     crossorigin="anonymous"></script>
   <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js" integrity="sha256-T0Vest3yCU7pafRw9r+settMBX6JkKN06dqBnpQ8d30="
     crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui-touch-punch/0.2.3/jquery.ui.touch-punch.min.js"></script>
-
-  <!--<script type="text/javascript" src="https://unpkg.com/@zxing/library@0.15.2"></script>-->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stackblur-canvas/2.2.0/stackblur.js"></script>
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.2.2/jszip.js"></script>
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/file-saver@2.0.2/dist/FileSaver.min.js"></script>

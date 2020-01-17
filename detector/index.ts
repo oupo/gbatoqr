@@ -94,6 +94,7 @@ function main(source: HTMLVideoElement) {
     const topRight = finderPoses[1];
     const bottomRight = finderPoses[2];
     const bottomLeft = finderPoses[3];
+    const [matrix, bits] = started ? run(canvas1) : [null, null];
     ctx.strokeStyle = "red";
     ctx.beginPath();
     ctx.moveTo(topLeft[0], topLeft[1]);
@@ -103,7 +104,6 @@ function main(source: HTMLVideoElement) {
     ctx.closePath();
     ctx.stroke();
     if (!started) return;
-    const [matrix, bits] = run(canvas1);
     const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
     const canvas3 = <HTMLCanvasElement>document.getElementById("canvas3");
     const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
@@ -218,8 +218,6 @@ function matrixToCanvas(matrix: BitMatrix, canvas: HTMLCanvasElement = document.
 }
 
 function processCamera() {
-    const canvas = <HTMLCanvasElement>document.getElementById("canvas");
-    const context = canvas.getContext("2d");
     navigator.mediaDevices.getUserMedia({
         audio: false,
         video: {
@@ -236,6 +234,7 @@ function processCamera() {
             setInterval(() => {
                 try {
                     main(video);
+                    prepend($("<div>hoge</div>").get(0));
                 } catch (e) { console.error(e); }
             }, 100);
         });
@@ -288,18 +287,10 @@ function shake0(mag: number, bytes: Uint8ClampedArray, valueToShake: number[]) {
 }
 
 function resize(video: HTMLVideoElement) {
-    const canvas = <HTMLCanvasElement>document.getElementById("canvas");
-    const context = canvas.getContext("2d");
     let w = video.videoWidth, h = video.videoHeight;
     video.width = w, video.height = h;
-    canvas.width = w, canvas.height = h;
-    document.getElementById("video-container").style.width = w + "px";
-    document.getElementById("video-container").style.height = h + "px";
     document.getElementById("canvas1-container").style.width = w + "px";
     document.getElementById("canvas1-container").style.height = h + "px";
-    context.clearRect(0, 0, w, h);
-    context.fillStyle = "rgba(0,0,255,0.5)";
-    context.fillRect(0, 0, w, h);
 }
 
 if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -311,7 +302,7 @@ if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
 document.getElementById("save-button").addEventListener("click", () => {
     let zip = new JSZip();
     for (let num in romdata) {
-        zip.file(String(num), romdata[num]);
+        zip.file(String(num).padStart(6, "0"), romdata[num]);
     }
     zip.generateAsync({ type: "blob" })
         .then(function (content) {
@@ -344,6 +335,7 @@ function handleResponse(array8: Uint8Array) {
     if (num == 0xffffffff && !succeededTestData) {
         prepend($("<div class='success'/>").text("success: test data").get(0));
         succeededTestData = true;
+        return;
     }
     if (romdata[num]) return;
     if (maxNum !== undefined) {
