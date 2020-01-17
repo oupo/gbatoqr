@@ -22,6 +22,7 @@ const output = document.getElementById("output");
 const img = <HTMLImageElement>document.getElementById("image");
 const expected = <HTMLImageElement>document.getElementById("expected");
 let finderPoses: Array<[number, number]> = [];
+let started = false;
 
 //test();
 
@@ -111,12 +112,14 @@ function main(source: HTMLVideoElement) {
     matrixToCanvas(bits, canvas4);
     drawDifference(canvas4, expected);
 
-/*    try {
-        let result = new WideQRDecoder().decodeBitMatrix(bits);
-        handleResponse(result.getText());
-    } catch(e) {
-        if (!(e instanceof ChecksumException)) console.error(e);
-    } */
+    if (started) {
+        try {
+            let result = new WideQRDecoder().decodeBitMatrix(bits);
+            handleResponse(result.getText());
+        } catch(e) {
+            if (!(e instanceof ChecksumException)) console.error(e);
+        }
+    }
 }
 
 const FINDER_SIZE = 30;
@@ -324,6 +327,10 @@ document.getElementById("shake").addEventListener("click", () => {
         shake(0.25);
         $("#shake").text("Shake corner points");
     }, 0);
+});
+document.getElementById("start").addEventListener("click", () => {
+    started = true;
+    $("#start").text("started");
 });
 
 let maxNum: number = undefined;
