@@ -99,7 +99,7 @@ function main(source: HTMLVideoElement) {
     const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
     const canvas3 = <HTMLCanvasElement>document.getElementById("canvas3");
     const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
-    ctx.strokeStyle = "white";
+    ctx.strokeStyle = "red";
     ctx.beginPath();
     ctx.moveTo(topLeft[0], topLeft[1]);
     ctx.lineTo(topRight[0], topRight[1]);
