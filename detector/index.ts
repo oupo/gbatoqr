@@ -234,7 +234,6 @@ function processCamera() {
             setInterval(() => {
                 try {
                     main(video);
-                    prepend($("<div>hoge</div>").get(0));
                 } catch (e) { console.error(e); }
             }, 100);
         });
