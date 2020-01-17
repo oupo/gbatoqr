@@ -8,7 +8,9 @@ This repository consists of the following two programs.
 ## How to build the NDS program
 
 devkitPro is required.
-Execute the `make` command in the ndswide directory.
+
+First, execute `./copy-submodule-files.sh` in the repository root directory.
+Second, execute the `make` command in the ndswide directory.
 
 ## How to run the scanning program
 
