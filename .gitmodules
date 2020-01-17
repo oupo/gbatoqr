@@ -1,9 +1,6 @@
 [submodule "QR-Code-generator"]
 	path = QR-Code-generator
 	url = https://github.com/oupo/QR-Code-generator.git
-[submodule "quirc"]
-	path = quirc
-	url = https://github.com/dlbeer/quirc.git
 [submodule "cpp-base64"]
 	path = cpp-base64
 	url = https://github.com/ReneNyffenegger/cpp-base64.git
