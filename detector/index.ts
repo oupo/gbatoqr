@@ -16,13 +16,16 @@ import { WideQRDecoder } from "./WideQRDecoder";
 const MAX_OUTPUT = 50;
 const MAX_ROM_BYTES = 32 * 1024 * 1024;
 const BLOCK_SIZE = 0x1c0;
-const romdata: ArrayBuffer[] = [];
 const video = <HTMLVideoElement>document.getElementById('video');
 const output = document.getElementById("output");
 const img = <HTMLImageElement>document.getElementById("image");
 const expected = <HTMLImageElement>document.getElementById("expected");
 let finderPoses: Array<[number, number]> = [];
+let romdata: ArrayBuffer[] = [];
 let started = false;
+let maxNum: number = undefined;
+let succeededTestData = false;
+
 
 //test();
 
@@ -41,11 +44,7 @@ function test() {
     }
     console.log(bits);
     let result = new WideQRDecoder().decodeBitMatrix(bits);
-    let text = result.getText();
-    let buffer = new ArrayBuffer(text.length);
-    let array8 = new Uint8Array(buffer);
-    for (let i = 0; i < text.length; i++) array8[i] = text.charCodeAt(i);
-    console.log(array8);
+    console.log(result.getByteSegments());
 }
 
 function run(canvas1: HTMLCanvasElement) {
@@ -115,7 +114,7 @@ function main(source: HTMLVideoElement) {
     if (started) {
         try {
             let result = new WideQRDecoder().decodeBitMatrix(bits);
-            handleResponse(result.getText());
+            handleResponse(result.getByteSegments()[0]);
         } catch(e) {
             if (!(e instanceof ChecksumException)) console.error(e);
         }
@@ -333,23 +332,20 @@ document.getElementById("start").addEventListener("click", () => {
     started = true;
     $("#start").text("started");
 });
+document.getElementById("reset").addEventListener("click", () => {
+    started = false;
+    $("#start").text("Start");
+    romdata = [];
+    succeededTestData = false;
+});
 
-let maxNum: number = undefined;
 
-let succeededTestData = false;
-
-function handleResponse(res: string) {
-    let buffer = new ArrayBuffer(res.length);
-    let array8 = new Uint8Array(buffer);
-    if (buffer.byteLength % 4 != 0) return;
-    let array32 = new Uint32Array(buffer);
-    for (let i = 0; i < res.length; i++) array8[i] = res.charCodeAt(i);
-    let num = array32[0];
+function handleResponse(array8: Uint8Array) {
+    let num = array8[0] | (array8[1] << 8) | (array8[2] << 16) | (array8[3] << 24);
     if (num == 0xffffffff && !succeededTestData) {
         prepend($("<div class='success'/>").text("success: test data").get(0));
         succeededTestData = true;
     }
-    if (!(0 <= num && num < Math.ceil(MAX_ROM_BYTES / BLOCK_SIZE))) return;
     if (romdata[num]) return;
     if (maxNum !== undefined) {
         if (maxNum < num - 1) {
