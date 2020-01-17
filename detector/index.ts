@@ -232,6 +232,7 @@ function processCamera() {
         video.srcObject = stream;
         video.play().then(() => {
             resize(video);
+            video.play();
             for (let i = 0; i < 4; i++) setupFinder(i);
 
             setInterval(() => {
