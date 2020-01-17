@@ -331,9 +331,11 @@ document.getElementById("reset").addEventListener("click", () => {
 
 function handleResponse(array8: Uint8Array) {
     let num = (array8[0] | (array8[1] << 8) | (array8[2] << 16) | (array8[3] << 24)) >>> 0;
-    if (num == 0xffffffff && !succeededTestData) {
-        prepend($("<div class='success'/>").text("success: test data").get(0));
-        succeededTestData = true;
+    if (num == 0xffffffff) {
+        if (!succeededTestData) {
+            prepend($("<div class='success'/>").text("success: test data").get(0));
+            succeededTestData = true;
+        }
         return;
     }
     if (romdata[num]) return;
