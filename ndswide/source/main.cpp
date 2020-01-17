@@ -166,7 +166,7 @@ void dump(const std::vector<std::pair<int, int>> &ranges)
 			if (keysDown() & KEY_START) {
 				return;
 			}
-			wait(60 * 1);
+			wait(60 * 0.5);
 		}
 	}
 	printf("Done!\n");
