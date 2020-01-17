@@ -2,6 +2,10 @@
 #include <stdio.h>
 #include <iostream>
 #include <algorithm>
+#include <string>
+#include <sstream>
+#include <algorithm>
+#include <iterator>
 
 // https://github.com/nayuki/QR-Code-generator
 #include "BitBuffer.hpp"
@@ -130,7 +134,7 @@ void writeRandomData(std::vector<uint8_t> &data, uint32_t seed)
 	}
 }
 
-void dump(int dumpsize)
+void dump(const std::vector<std::pair<int, int>> &ranges)
 {
 	videoSetMode(MODE_5_2D);
 	vramSetBankA(VRAM_A_MAIN_BG);
@@ -150,18 +154,49 @@ void dump(int dumpsize)
 	strncpy(name, (char *)0x080000A0, 12);
 	printf("Target to dump: %s\n", name);
 	wait(0);
-	for (int i = 0x0; i < dumpsize * 1024; i += BLOCK_SIZE)
-	{
-		printf("Dumping %08X...", i);
-		dumpQR(videoMemoryMain, i / BLOCK_SIZE, ((uint8_t *)GBAROM) + i, BLOCK_SIZE);
-		printf("done\n");
-		scanKeys();
-		if (keysDown() & KEY_START) {
-			return;
+	int numRanges = ranges.size();
+	for (int n = 0; n < numRanges; n ++) {
+		int start = ranges[n].first;
+		int end = ranges[n].second;
+		for (int i = start; i <= end; i ++) {
+			printf("Dumping %05d...", i);
+			dumpQR(videoMemoryMain, i, ((uint8_t *)GBAROM) + i * BLOCK_SIZE, BLOCK_SIZE);
+			printf("done\n");
+			scanKeys();
+			if (keysDown() & KEY_START) {
+				return;
+			}
+			wait(60 * 1);
 		}
-		wait(60 * 1);
 	}
 	printf("Done!\n");
+}
+
+template <class Container>
+void split(const std::string& str, Container& cont, char delim = ' ')
+{
+    std::stringstream ss(str);
+    std::string token;
+    while (std::getline(ss, token, delim)) {
+        cont.push_back(token);
+    }
+}
+
+void parseRanges(const char *buf, std::vector<std::pair<int, int>> &ranges) {
+	std::string str(buf);
+	std::vector<std::string> rangeStrs;
+	split(str, rangeStrs, ',');
+	int num = rangeStrs.size();
+	ranges.resize(num);
+	for (int i = 0; i < num; i ++) {
+		std::vector<std::string> vec;
+		split(rangeStrs[i], vec, '-');
+		if (vec.size() == 2) {
+			ranges[i] = std::make_pair(std::stoi(vec[0]), std::stoi(vec[1]));
+		} else {
+			ranges[i] = std::make_pair(std::stoi(vec[0]), std::stoi(vec[0]));
+		}
+	}
 }
 
 int main(void)
@@ -175,11 +210,13 @@ int main(void)
 	sysSetCartOwner(1);
 
 	while (1) {
-		int dumpsize;
-		printf("Input size to dump (KB) >");
-		scanf("%d", &dumpsize);
-		dumpsize = std::max(std::min(dumpsize, 32 * 1024), 1);
-		dump(dumpsize);
+		char buf[256];
+		std::vector<std::pair<int, int>> ranges;
+		consoleClear();
+		printf("Input range (e.g. 0-127)\n>");
+		fgets(buf, 256, stdin);
+		parseRanges(buf, ranges);
+		dump(ranges);
 	}
 
 	return 0;
