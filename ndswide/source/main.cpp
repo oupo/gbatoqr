@@ -67,7 +67,7 @@ void dumpQR(u16 *videoMemoryMain, int blockid, uint8_t *buf, int len)
 	vec[3] = (blockid >> 24) & 0xff;
 	std::copy(buf, buf + len, vec.begin() + 4);
 	std::vector<QrSegment> segs{QrSegment::makeEci(27), QrSegment::makeBytes(vec)};
-	int mask = 0; // fix mask for speed
+	int mask = 7;
 	const QrCode qr = QrCode::encodeSegmentsWide(segs, mask);
 
 	int w = qr.getWidth(), h = qr.getHeight();
@@ -76,13 +76,9 @@ void dumpQR(u16 *videoMemoryMain, int blockid, uint8_t *buf, int len)
 		for (int x = 0; x < w; x++)
 		{
 			int c = qr.getModule(x, y) ? 0 : 31;
-			fillRect(videoMemoryMain, 2 * x + 2, 2 * y + 2, 2, 2, ARGB16(1, c, c, c));
+			fillRect(videoMemoryMain, 1 * x + 2, 2 * y + 2, 1, 2, ARGB16(1, c, c, c));
 		}
 	}
-	fillRect(videoMemoryMain, 2, 2, 4, 4, ARGB16(1, 8, 16, 29));
-	fillRect(videoMemoryMain, 256 - 6, 2, 4, 4, ARGB16(1, 3, 26, 10));
-	fillRect(videoMemoryMain, 256 - 6, 192 - 6, 4, 4, ARGB16(1, 28, 20, 7));
-	fillRect(videoMemoryMain, 2, 192 - 6, 4, 4, ARGB16(1, 28, 11, 21));
 }
 
 QrCode makeQR(int blockid, uint8_t *buf, int len)
@@ -94,7 +90,7 @@ QrCode makeQR(int blockid, uint8_t *buf, int len)
 	vec[3] = (blockid >> 24) & 0xff;
 	std::copy(buf, buf + len, vec.begin() + 4);
 	std::vector<QrSegment> segs{QrSegment::makeEci(27), QrSegment::makeBytes(vec)};
-	int mask = 0; // fix mask for speed
+	int mask = 7;
 	return QrCode::encodeSegmentsWide(segs, mask);
 }
 
@@ -113,13 +109,9 @@ void dumpQR2(u16 *videoMemoryMain, int blockid1, int blockid2, uint8_t *buf1, ui
 			fillRect(videoMemoryMain, 2 * x + 2, 2 * y + 2, 2, 2, ARGB16(1, c1, c2, c3));
 		}
 	}
-	fillRect(videoMemoryMain, 2, 2, 4, 4, ARGB16(1, 8, 16, 29));
-	fillRect(videoMemoryMain, 256 - 6, 2, 4, 4, ARGB16(1, 3, 26, 10));
-	fillRect(videoMemoryMain, 256 - 6, 192 - 6, 4, 4, ARGB16(1, 28, 20, 7));
-	fillRect(videoMemoryMain, 2, 192 - 6, 4, 4, ARGB16(1, 28, 11, 21));
 }
 
-const int BLOCK_SIZE = 0x480;
+const int BLOCK_SIZE = 0x900;
 
 void writeRandomData(std::vector<uint8_t> &data, uint32_t seed)
 {
@@ -134,6 +126,21 @@ void writeRandomData(std::vector<uint8_t> &data, uint32_t seed)
 	}
 }
 
+void drawFinder(uint16_t *videoMemoryMain, int x, int y, u16 color) {
+	fillRect(videoMemoryMain, x, y, 14, 14, color);
+	fillRect(videoMemoryMain, x + 2, y + 2, 10, 10, ARGB16(1, 31, 31, 31));
+	fillRect(videoMemoryMain, x + 4, y + 4, 6, 6, color);
+}
+
+void drawFinders(uint16_t *videoMemoryMain) {
+	drawFinder(videoMemoryMain, 2, 2, ARGB16(1, 16, 0, 0));
+	drawFinder(videoMemoryMain, 256 - 2 - 14, 2, ARGB16(1, 4, 9, 0));
+	drawFinder(videoMemoryMain, 2, 192 - 2 - 14, ARGB16(1, 0, 11, 11));
+	drawFinder(videoMemoryMain, 256 - 2 - 14, 192 - 2 - 14, ARGB16(1, 9, 0, 18));
+	printf("drawed finders. push A\n");
+	waitKey();
+}
+
 void dump(const std::vector<std::pair<int, int>> &ranges)
 {
 	videoSetMode(MODE_5_2D);
@@ -142,12 +149,10 @@ void dump(const std::vector<std::pair<int, int>> &ranges)
 	u16 *videoMemoryMain = bgGetGfxPtr(bgMain);
 	for (int i = 0; i < 256 * 256; i++)
 		videoMemoryMain[i] = ARGB16(1, 31, 31, 31);
+	drawFinders(videoMemoryMain);
 	std::vector<uint8_t> testdata;
 	writeRandomData(testdata, 0xdeadbeef);
 	dumpQR(videoMemoryMain, 0xffffffff, &testdata[0], BLOCK_SIZE);
-	/*	std::vector<uint8_t> testdata2;
-	writeRandomData(testdata2, 0xcafecafe);
-	dumpQR2(videoMemoryMain, 0, 1, &testdata[0], &testdata2[0], BLOCK_SIZE); */
 	printf("drawed test data. push A\n");
 	waitKey();
 	char name[13] = {};

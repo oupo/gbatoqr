@@ -5,12 +5,12 @@ import {
     QRCodeECBlocks, QRCodeECB
 } from "../zxing-js/src/index";
 
-const WIDTH = 126;
+const WIDTH = 252;
 const HEIGHT = 94;
 const DUMMY_VER = QRCodeVersion.getVersionForNumber(40);
-const ECBLOCKS = new QRCodeECBlocks(30, new QRCodeECB(2, 117), new QRCodeECB(8, 118));
+const ECBLOCKS = new QRCodeECBlocks(30, new QRCodeECB(3, 125), new QRCodeECB(16, 126));
 const REAL_VER = new QRCodeVersion(0, Int32Array.from([]), ECBLOCKS);
-const TOTAL_CODE_WORDS = Math.floor((WIDTH * HEIGHT - 2 * 2 * 4) / 8);
+const TOTAL_CODE_WORDS = Math.floor((WIDTH * HEIGHT) / 8);
 
 
 export class WideQRDecoder {
@@ -65,7 +65,7 @@ export class WideQRDecoder {
 
 class WideQRDataMask {
     public static isMasked(x: number, y: number) {
-        return ((x ^ y) & 0x01) === 0;
+        return ((x + y + ((x * y) % 3)) & 0x01) === 0;
     }
 
     public static unmaskBitMatrix(bits: BitMatrix): void {

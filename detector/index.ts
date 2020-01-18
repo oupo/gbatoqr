@@ -3,9 +3,11 @@ import {
     HTMLCanvasElementLuminanceSource, HybridBinarizer,
     BinaryBitmap, BitMatrix,
     QRCodeDecoder, DetectorResult, GridSamplerInstance, PerspectiveTransform,
-    GridSampler, ChecksumException
+    GridSampler, ChecksumException, QRCodeFinderPatternFinder
 } from "../zxing-js/src/index";
 import { saveAs } from "file-saver";
+import { rgbToHsl } from "./rgbToHsl";
+import { iota } from "./util";
 //import * as JSZip from "jszip";
 declare global { const JSZip : any; }
 
@@ -27,7 +29,10 @@ let maxNum: number = undefined;
 let succeededTestData = false;
 
 
-//test();
+const dimX = 252;
+const dimY = 92;
+
+test2();
 
 function test() {
     let byteArray = imgToByteArray(expected);
@@ -47,6 +52,66 @@ function test() {
     console.log(result.getByteSegments());
 }
 
+function test2() {
+    const img = <HTMLImageElement>document.getElementById("test");
+    if (!img.complete) {
+        img.addEventListener("load", test2);
+        return;
+    }
+    const w = img.width, h = img.height;
+    const canvas = document.createElement("canvas");
+    canvas.width = w, canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+    //StackBlur.canvasRGBA(canvas, 0, 0, w, h, 1);
+    const source = new HTMLCanvasElementLuminanceSource(canvas);
+    const threshold = 90;
+    const hybridBinarizer = new HybridBinarizer(source, threshold);
+    const bitmap = new BinaryBitmap(hybridBinarizer);
+    let matrix = bitmap.getBlackMatrix();
+    const finder = new QRCodeFinderPatternFinder(matrix, null);
+    console.log(finder.find(null, 4));
+    const patterns = finder.getPossibleCenters();
+    console.log(patterns);
+    if (patterns.length < 4) return;
+    const hues: number[] = [];
+    for (let pattern of patterns) {
+        const imageData = ctx.getImageData(pattern.getX(), pattern.getY(), 1, 1);
+        const data = imageData.data;
+        hues.push(rgbToHsl(data[0], data[1], data[2])[0]);
+    }
+    let newPatterns = iota(4).sort((i, j) => hues[i] - hues[j]).map(i => patterns[i]);
+    for (let i = 0; i < 4; i ++) {
+        const pattern = newPatterns[i];
+        console.log(pattern);
+        ctx.fillStyle = "hsl("+(i*90)+",100%,50%)";
+        ctx.fillRect(pattern.getX() - 2, pattern.getY() - 2, 4, 4);
+    }
+    
+    const ofs = 7;
+    const transform = PerspectiveTransform.quadrilateralToQuadrilateral(
+        ofs, ofs,
+        dimX - ofs, ofs,
+        dimX - ofs, 2 * dimY - ofs,
+        ofs, 2 * dimY - ofs,
+        newPatterns[0].getX(), newPatterns[0].getY(),
+        newPatterns[1].getX(), newPatterns[1].getY(),
+        newPatterns[3].getX(), newPatterns[3].getY(),
+        newPatterns[2].getX(), newPatterns[2].getY());
+    const points = Float32Array.from([0, 0, dimX, 0, dimX, 2 * dimY, 0, 2 * dimY]);
+    transform.transformPoints(points);
+    console.log(points);
+    ctx.strokeStyle = "red";
+    ctx.beginPath();
+    ctx.moveTo(points[0], points[1]);
+    ctx.lineTo(points[2], points[3]);
+    ctx.lineTo(points[4], points[5]);
+    ctx.lineTo(points[6], points[7]);
+    ctx.closePath();
+    ctx.stroke();
+    document.body.appendChild(canvas);
+}
+
 function run(canvas1: HTMLCanvasElement) {
     const threshold = Number((<HTMLInputElement>document.getElementById("threshold")).value);
     const w = canvas1.width, h = canvas1.height;
@@ -58,8 +123,6 @@ function run(canvas1: HTMLCanvasElement) {
     const hybridBinarizer = new HybridBinarizer(luminanceSource, threshold);
     const bitmap = new BinaryBitmap(hybridBinarizer);
     let matrix = bitmap.getBlackMatrix();
-    const dimX = 126;
-    const dimY = 94;
     const transform = PerspectiveTransform.quadrilateralToQuadrilateral(
         0, 0,
         dimX, 0,
