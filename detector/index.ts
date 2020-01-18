@@ -213,7 +213,7 @@ function main(source: HTMLVideoElement) {
     ctx.closePath();
     ctx.stroke();
     for (let i = 0; i < 4; i ++) {
-        ctx.fillStyle = "hsl("+(i*90)+", 100%, 50%)";
+        ctx.fillStyle = "hsl("+([0, 1, 3, 2][i]*90)+", 100%, 50%)";
         ctx.beginPath();
         ctx.arc(finderPoses[i][0], finderPoses[i][1], 3, 0, 2 * Math.PI);
         ctx.fill();
