@@ -25,14 +25,8 @@
       background-color: #e7b5b5;
     }
 
-    #canvas1-container {
-      width: 640px;
-      height: 480px;
-      position: relative;
-    }
-
     #canvas1-container > canvas {
-      position: absolute;
+      max-width: 600px;
     }
     .range-blur, .range-threshold {
       height: 50px;
@@ -86,10 +80,6 @@
     <div>
       <div id="canvas1-container">
         <canvas id="canvas1"></canvas>
-        <canvas id="finder0"></canvas>
-        <canvas id="finder1"></canvas>
-        <canvas id="finder2"></canvas>
-        <canvas id="finder3"></canvas>
       </div>
       <div><canvas id="canvas2"></canvas></div>
     </div>

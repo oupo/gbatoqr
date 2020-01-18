@@ -397,8 +397,6 @@ function shake0(mag: number, bytes: Uint8ClampedArray, valueToShake: number[]) {
 function resize(video: HTMLVideoElement) {
     let w = video.videoWidth, h = video.videoHeight;
     video.width = w, video.height = h;
-    document.getElementById("canvas1-container").style.width = w + "px";
-    document.getElementById("canvas1-container").style.height = h + "px";
 }
 
 if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
