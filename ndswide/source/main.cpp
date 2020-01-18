@@ -17,8 +17,6 @@ using std::uint8_t;
 
 int frameCount = 0;
 int lastFrameCount = 0;
-const int BLOCK_SIZE = 0x900;
-std::vector<uint8_t> randomMask;
 
 void Vblank()
 {
@@ -46,19 +44,6 @@ void waitKey()
 	{
 		swiWaitForVBlank();
 		scanKeys();
-	}
-}
-
-void initializeRandomMask() {
-	randomMask.resize(BLOCK_SIZE);
-	uint32_t x = 0xcafe1234;
-	int j = 0;
-	for (int i = 0; i < BLOCK_SIZE / 4; i ++) {
-		randomMask[j++] = x & 0xff;
-		randomMask[j++] = (x >> 8) & 0xff;
-		randomMask[j++] = (x >> 16) & 0xff;
-		randomMask[j++] = (x >> 24) & 0xff;
-		x = x ^ (x << 13); x = x ^ (x >> 17);
 	}
 }
 
@@ -104,13 +89,6 @@ QrCode makeQR(int blockid, uint8_t *buf, int len)
 	vec[2] = (blockid >> 16) & 0xff;
 	vec[3] = (blockid >> 24) & 0xff;
 	std::copy(buf, buf + len, vec.begin() + 4);
-	uint32_t *src1 = (uint32_t*)buf;
-	uint32_t *src2 = (uint32_t*)&randomMask[0];
-	uint32_t *dest = (uint32_t*)&vec[4];
-	int l = len / 4;
-	for (int i = 0; i < l; i ++) {
-		dest[i] = src1[i] ^ src2[i];
-	}
 	std::vector<QrSegment> segs{QrSegment::makeEci(27), QrSegment::makeBytes(vec)};
 	int mask = 7;
 	return QrCode::encodeSegmentsWide(segs, mask);
@@ -132,6 +110,8 @@ void dumpQR2(u16 *videoMemoryMain, int blockid1, int blockid2, uint8_t *buf1, ui
 		}
 	}
 }
+
+const int BLOCK_SIZE = 0x900;
 
 void writeRandomData(std::vector<uint8_t> &data, uint32_t seed)
 {
@@ -226,7 +206,6 @@ void parseRanges(const char *buf, std::vector<std::pair<int, int>> &ranges) {
 
 int main(void)
 {
-	initializeRandomMask();
 	irqSet(IRQ_VBLANK, Vblank);
 	consoleDemoInit();
 	Keyboard *kbd = keyboardDemoInit();
