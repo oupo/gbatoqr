@@ -212,6 +212,12 @@ function main(source: HTMLVideoElement) {
     ctx.lineTo(bottomLeft[0], bottomLeft[1]);
     ctx.closePath();
     ctx.stroke();
+    for (let i = 0; i < 4; i ++) {
+        ctx.fillStyle = "hsl("+(i*90)+", 100%, 50%)";
+        ctx.beginPath();
+        ctx.arc(finderPoses[i][0], finderPoses[i][1], 3, 0, 2 * Math.PI);
+        ctx.fill();
+    }
     const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
     const canvas3 = <HTMLCanvasElement>document.getElementById("canvas3");
     const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
@@ -227,40 +233,6 @@ function main(source: HTMLVideoElement) {
     } catch(e) {
         if (!(e instanceof ChecksumException)) console.error(e);
     }
-}
-
-const FINDER_SIZE = 30;
-
-function setupFinder(i: number) {
-    const colors = ["#4287f5", "#1fdb5a", "#eda73e", "#e85fb1"];
-    const defaultCoordinates = [[10, 10], [300, 10], [300, 300], [10, 300]];
-    let canvas = <HTMLCanvasElement>document.getElementById("finder" + i);
-    const size = FINDER_SIZE;
-    canvas.width = canvas.height = size;
-    let ctx = canvas.getContext("2d");
-    ctx.strokeStyle = colors[i];
-    ctx.lineWidth = 4;
-    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
-    ctx.stroke();
-    $(canvas).draggable({
-        drag: (ev, ui) => ondrag(ui),
-        stop: (ev, ui) => ondrag(ui),
-    });
-    canvas.style.left = defaultCoordinates[i][0] + "px";
-    canvas.style.top = defaultCoordinates[i][1] + "px";
-
-    function ondrag(ui: JQueryUI.DraggableEventUIParams) {
-        updateFinderPos(i);
-    }
-
-    updateFinderPos(i);
-}
-
-function updateFinderPos(i: number) {
-    let canvas = <HTMLCanvasElement>document.getElementById("finder" + i);
-    let $canvas = $(canvas);
-    let pos = $canvas.position();
-    finderPoses[i] = [pos.left + FINDER_SIZE / 2, pos.top + FINDER_SIZE / 2];
 }
 
 function calculateDifference(bits: BitMatrix, srcBytes: Uint8ClampedArray) {
@@ -337,9 +309,6 @@ function processCamera() {
         video.srcObject = stream;
         video.play().then(() => {
             resize(video);
-            video.play();
-            //for (let i = 0; i < 4; i++) setupFinder(i);
-
             setInterval(() => {
                 try {
                     main(video);
