@@ -114,14 +114,12 @@ function test2() {
 }
 
 function searchFinder() {
-    const blurRadius = Number((<HTMLInputElement>document.getElementById("blur-radius")).value);
     const threshold = Number((<HTMLInputElement>document.getElementById("threshold")).value);
     const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
     const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
     const w = canvas1.width, h = canvas1.height;
     const ctx = canvas1.getContext("2d");
     videoToCanvas(video);
-    StackBlur.canvasRGBA(canvas1, 0, 0, w, h, blurRadius);
     const source = new HTMLCanvasElementLuminanceSource(canvas1);
     const hybridBinarizer = new HybridBinarizer(source, threshold);
     const bitmap = new BinaryBitmap(hybridBinarizer);
@@ -185,17 +183,14 @@ function run(canvas1: HTMLCanvasElement) {
 }
 
 function videoToCanvas(video: HTMLVideoElement) {
-    const blurRadius = Number((<HTMLInputElement>document.getElementById("blur-radius")).value);
     const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
     const ctx = canvas1.getContext("2d");
     const w = video.width, h = video.height;
     canvas1.width = w, canvas1.height = h;
     ctx.drawImage(video, 0, 0, w, h);
-    StackBlur.canvasRGBA(canvas1, 0, 0, w, h, blurRadius);
 }
 
 function main(source: HTMLVideoElement) {
-    const blurRadius = Number((<HTMLInputElement>document.getElementById("blur-radius")).value);
     const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
     const ctx = canvas1.getContext("2d");
     videoToCanvas(source);
