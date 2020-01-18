@@ -25,3 +25,8 @@ To build, execute the following command:
 ```
 npm run build
 ```
+
+
+## Hosting
+
+https://gbatoqr.netlify.com/
