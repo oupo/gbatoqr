@@ -321,43 +321,32 @@ function processCamera() {
     });
 }
 
-function shake(mag: number) {
+function shake(index: number, mag: number) {
     videoToCanvas(video);
     let bytes = imgToByteArray(expected);
     const dx = [-1, 0, 0, 1, 0];
     const dy = [0, -1, 1, 0, 0];
     let min = Infinity;
-    let argmin: number[] = null;
-    for (let i = 0; i < 5; i++)
-        for (let j = 0; j < 5; j++)
-            for (let k = 0; k < 5; k++)
-                for (let l = 0; l < 5; l++) {
-                    let num = shake0(mag, bytes, [dx[i], dy[i], dx[j], dy[j], dx[k], dy[k], dx[l], dy[l]]);
-                    if (num < min) {
-                        min = num;
-                        argmin = [i, j, k, l];
-                    }
+    let argmin: number = null;
+    for (let i = 0; i < 5; i++) {
+        let num = shake0(mag, bytes, index, [dx[i], dy[i]]);
+        if (num < min) {
+            min = num;
+            argmin = i;
+        }
     }
-    let [i, j, k, l] = argmin;
-    let valueToShake = [dx[i], dy[i], dx[j], dy[j], dx[k], dy[k], dx[l], dy[l]]
-    finderPoses = [
-        [finderPoses[0][0] + mag * valueToShake[0], finderPoses[0][1] + mag * valueToShake[1]],
-        [finderPoses[1][0] + mag * valueToShake[2], finderPoses[1][1] + mag * valueToShake[3]],
-        [finderPoses[2][0] + mag * valueToShake[4], finderPoses[2][1] + mag * valueToShake[5]],
-        [finderPoses[3][0] + mag * valueToShake[6], finderPoses[3][1] + mag * valueToShake[7]],
-    ];
+    let i = argmin;
+    let valueToShake = [dx[i], dy[i]];
+    finderPoses = Array.from(finderPoses);
+    finderPoses[index] = [finderPoses[index][0] + mag * valueToShake[0], finderPoses[index][1] + mag * valueToShake[1]];
 }
 
-function shake0(mag: number, bytes: Uint8ClampedArray, valueToShake: number[]) {
+function shake0(mag: number, bytes: Uint8ClampedArray, index: number, valueToShake: number[]) {
     const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
     const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
     const finderPosesBackup = finderPoses;
-    finderPoses = [
-        [finderPosesBackup[0][0] + mag * valueToShake[0], finderPosesBackup[0][1] + mag * valueToShake[1]],
-        [finderPosesBackup[1][0] + mag * valueToShake[2], finderPosesBackup[1][1] + mag * valueToShake[3]],
-        [finderPosesBackup[2][0] + mag * valueToShake[4], finderPosesBackup[2][1] + mag * valueToShake[5]],
-        [finderPosesBackup[3][0] + mag * valueToShake[6], finderPosesBackup[3][1] + mag * valueToShake[7]],
-    ];
+    finderPoses = Array.from(finderPoses);
+    finderPoses[index] = [finderPoses[index][0] + mag * valueToShake[0], finderPoses[index][1] + mag * valueToShake[1]];
     const [matrix, bits] = run(canvas1);
     finderPoses = finderPosesBackup;    
     return calculateDifference(bits, bytes);
@@ -387,9 +376,11 @@ document.getElementById("save-button").addEventListener("click", () => {
 document.getElementById("shake").addEventListener("click", () => {
     $("#shake").text("Shaking...");
     setTimeout(() => {
-        shake(1);
-        shake(0.5);
-        shake(0.25);
+        for (let i = 0; i < 4; i ++) {
+            shake(i, 1);
+            shake(i, 0.5);
+            shake(i, 0.25);
+        }
         $("#shake").text("Shake corner points");
     }, 0);
 });
