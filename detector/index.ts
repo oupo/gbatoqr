@@ -114,49 +114,49 @@ function test2() {
 }
 
 function searchFinder() {
+    const blurRadius = Number((<HTMLInputElement>document.getElementById("blur-radius")).value);
+    const threshold = Number((<HTMLInputElement>document.getElementById("threshold")).value);
+    const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
+    const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
+    const w = canvas1.width, h = canvas1.height;
+    const ctx = canvas1.getContext("2d");
+    videoToCanvas(video);
+    StackBlur.canvasRGBA(canvas1, 0, 0, w, h, blurRadius);
+    const source = new HTMLCanvasElementLuminanceSource(canvas1);
+    const hybridBinarizer = new HybridBinarizer(source, threshold);
+    const bitmap = new BinaryBitmap(hybridBinarizer);
+    let matrix = bitmap.getBlackMatrix();
+    const finder = new QRCodeFinderPatternFinder(matrix, null);
+    let patterns: QRCodeFinderPattern[] = null;
     try {
-        const blurRadius = Number((<HTMLInputElement>document.getElementById("blur-radius")).value);
-        const threshold = Number((<HTMLInputElement>document.getElementById("threshold")).value);
-        const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
-        const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
-        const w = canvas1.width, h = canvas1.height;
-        const ctx = canvas1.getContext("2d");
-        videoToCanvas(video);
-        StackBlur.canvasRGBA(canvas1, 0, 0, w, h, blurRadius);
-        const source = new HTMLCanvasElementLuminanceSource(canvas1);
-        const hybridBinarizer = new HybridBinarizer(source, threshold);
-        const bitmap = new BinaryBitmap(hybridBinarizer);
-        let matrix = bitmap.getBlackMatrix();
-        const finder = new QRCodeFinderPatternFinder(matrix, null);
-        let patterns: QRCodeFinderPattern[] = null;
-        try {
-            finder.find(null, 4);
-            patterns = finder.getPossibleCenters();
-        } catch(e) {
-            prepend($("<div class='failed'>not found</div>").get(0));
-            return;
-        }
-        const hues: number[] = [];
-        for (let pattern of patterns) {
-            const imageData = ctx.getImageData(pattern.getX(), pattern.getY(), 1, 1);
-            const data = imageData.data;
-            hues.push(rgbToHsl(data[0], data[1], data[2])[0]);
-        }
-        let newPatterns = iota(4).sort((i, j) => hues[i] - hues[j]).map(i => patterns[i]);
-        const ofs = 7;
-        const transform = PerspectiveTransform.quadrilateralToQuadrilateral(
-            ofs, ofs,
-            dimX - ofs, ofs,
-            dimX - ofs, 2 * dimY - ofs,
-            ofs, 2 * dimY - ofs,
-            newPatterns[0].getX(), newPatterns[0].getY(),
-            newPatterns[1].getX(), newPatterns[1].getY(),
-            newPatterns[3].getX(), newPatterns[3].getY(),
-            newPatterns[2].getX(), newPatterns[2].getY());
-        const points = Float32Array.from([0, 0, dimX, 0, dimX, 2 * dimY, 0, 2 * dimY]);
-        transform.transformPoints(points);
-        finderPoses = [[points[0], points[1]], [points[2], points[3]], [points[4], points[5]], [points[6], points[7]]];
-    } catch(e) { alert(e); }
+        finder.find(null, 4);
+        patterns = finder.getPossibleCenters();
+    } catch(e) {
+        prepend($("<div class='failed'>not found</div>").get(0));
+        return;
+    }
+    const hues: number[] = [];
+    for (let pattern of patterns) {
+        const imageData = ctx.getImageData(pattern.getX(), pattern.getY(), 1, 1);
+        const data = imageData.data;
+        hues.push(rgbToHsl(data[0], data[1], data[2])[0]);
+    }
+    let newPatterns = iota(4).sort((i, j) => hues[i] - hues[j]).map(i => patterns[i]);
+    const ofs = 7;
+    const transform = PerspectiveTransform.quadrilateralToQuadrilateral(
+        ofs, ofs,
+        dimX - ofs, ofs,
+        dimX - ofs, 2 * dimY - ofs,
+        ofs, 2 * dimY - ofs,
+        newPatterns[0].getX(), newPatterns[0].getY(),
+        newPatterns[1].getX(), newPatterns[1].getY(),
+        newPatterns[3].getX(), newPatterns[3].getY(),
+        newPatterns[2].getX(), newPatterns[2].getY());
+    const points = Float32Array.from([0, 0, dimX, 0, dimX, 2 * dimY, 0, 2 * dimY]);
+    transform.transformPoints(points);
+    finderPoses = [[points[0], points[1]], [points[2], points[3]], [points[4], points[5]], [points[6], points[7]]];
+    prepend($("<div class='success'>searched finders</div>").get(0));
+
 }
 
 function run(canvas1: HTMLCanvasElement) {
