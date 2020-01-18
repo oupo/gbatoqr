@@ -106,12 +106,13 @@ class WideQRBitMatrixParser {
 
         const functionPattern = this.buildFunctionPattern();
 
-        let readingUp: boolean = WIDTH % 2 == 1;
+        let readingUp: boolean;
         const result = new Uint8Array(TOTAL_CODE_WORDS);
         let resultOffset = 0;
         let currentByte = 0;
         let bitsRead = 0;
         for (let j = WIDTH - 1; j > 0; j -= 2) {
+            readingUp = ((j + 1) & 2) == 0;
             for (let count = 0; count < HEIGHT; count++) {
                 const i = readingUp ? HEIGHT - 1 - count : count;
                 for (let col = 0; col < 2; col++) {
@@ -129,7 +130,6 @@ class WideQRBitMatrixParser {
                     }
                 }
             }
-            readingUp = !readingUp;
         }
         if (resultOffset !== TOTAL_CODE_WORDS) {
             throw new FormatException();

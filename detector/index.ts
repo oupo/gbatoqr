@@ -33,7 +33,7 @@ let succeededTestData = false;
 const dimX = 252;
 const dimY = 94;
 
-//test2();
+//test();
 
 function test() {
     let byteArray = imgToByteArray(expected);
