@@ -3,7 +3,7 @@ import {
     HTMLCanvasElementLuminanceSource, HybridBinarizer,
     BinaryBitmap, BitMatrix,
     QRCodeDecoder, DetectorResult, GridSamplerInstance, PerspectiveTransform,
-    GridSampler, ChecksumException, QRCodeFinderPatternFinder
+    GridSampler, ChecksumException, QRCodeFinderPatternFinder, QRCodeFinderPattern
 } from "../zxing-js/src/index";
 import { saveAs } from "file-saver";
 import { rgbToHsl } from "./rgbToHsl";
@@ -14,6 +14,7 @@ declare global { const JSZip : any; }
 import * as StackBlur from "stackblur-canvas";
 import { MyGridSampler } from "./MyGridSampler";
 import { WideQRDecoder } from "./WideQRDecoder";
+import { NotFoundException } from "../zxing-js/esm5";
 
 const MAX_OUTPUT = 50;
 const MAX_ROM_BYTES = 32 * 1024 * 1024;
@@ -22,9 +23,9 @@ const video = <HTMLVideoElement>document.getElementById('video');
 const output = document.getElementById("output");
 const img = <HTMLImageElement>document.getElementById("image");
 const expected = <HTMLImageElement>document.getElementById("expected");
-let finderPoses: Array<[number, number]> = [];
+let finderPoses: Array<[number, number]> = [[10, 10], [30, 10], [30, 30], [10, 30]];
 let romdata: ArrayBuffer[] = [];
-let started = false;
+let started = true;
 let maxNum: number = undefined;
 let succeededTestData = false;
 
@@ -32,7 +33,7 @@ let succeededTestData = false;
 const dimX = 252;
 const dimY = 92;
 
-test2();
+//test2();
 
 function test() {
     let byteArray = imgToByteArray(expected);
@@ -112,6 +113,52 @@ function test2() {
     document.body.appendChild(canvas);
 }
 
+function searchFinder() {
+    try {
+        const blurRadius = Number((<HTMLInputElement>document.getElementById("blur-radius")).value);
+        const threshold = Number((<HTMLInputElement>document.getElementById("threshold")).value);
+        const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
+        const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
+        const w = canvas1.width, h = canvas1.height;
+        const ctx = canvas1.getContext("2d");
+        videoToCanvas(video);
+        StackBlur.canvasRGBA(canvas1, 0, 0, w, h, blurRadius);
+        const source = new HTMLCanvasElementLuminanceSource(canvas1);
+        const hybridBinarizer = new HybridBinarizer(source, threshold);
+        const bitmap = new BinaryBitmap(hybridBinarizer);
+        let matrix = bitmap.getBlackMatrix();
+        const finder = new QRCodeFinderPatternFinder(matrix, null);
+        let patterns: QRCodeFinderPattern[] = null;
+        try {
+            finder.find(null, 4);
+            patterns = finder.getPossibleCenters();
+        } catch(e) {
+            prepend($("<div class='failed'>not found</div>").get(0));
+            return;
+        }
+        const hues: number[] = [];
+        for (let pattern of patterns) {
+            const imageData = ctx.getImageData(pattern.getX(), pattern.getY(), 1, 1);
+            const data = imageData.data;
+            hues.push(rgbToHsl(data[0], data[1], data[2])[0]);
+        }
+        let newPatterns = iota(4).sort((i, j) => hues[i] - hues[j]).map(i => patterns[i]);
+        const ofs = 7;
+        const transform = PerspectiveTransform.quadrilateralToQuadrilateral(
+            ofs, ofs,
+            dimX - ofs, ofs,
+            dimX - ofs, 2 * dimY - ofs,
+            ofs, 2 * dimY - ofs,
+            newPatterns[0].getX(), newPatterns[0].getY(),
+            newPatterns[1].getX(), newPatterns[1].getY(),
+            newPatterns[3].getX(), newPatterns[3].getY(),
+            newPatterns[2].getX(), newPatterns[2].getY());
+        const points = Float32Array.from([0, 0, dimX, 0, dimX, 2 * dimY, 0, 2 * dimY]);
+        transform.transformPoints(points);
+        finderPoses = [[points[0], points[1]], [points[2], points[3]], [points[4], points[5]], [points[6], points[7]]];
+    } catch(e) { alert(e); }
+}
+
 function run(canvas1: HTMLCanvasElement) {
     const threshold = Number((<HTMLInputElement>document.getElementById("threshold")).value);
     const w = canvas1.width, h = canvas1.height;
@@ -134,7 +181,6 @@ function run(canvas1: HTMLCanvasElement) {
         bottomLeft[0], bottomLeft[1]);
     const sampler = new MyGridSampler();
     const bits = sampler.sampleGridWithTransform(matrix, dimX, dimY, transform);
-    let detectorResult = new DetectorResult(bits, null);
     return [matrix, bits];
 }
 
@@ -157,7 +203,7 @@ function main(source: HTMLVideoElement) {
     const topRight = finderPoses[1];
     const bottomRight = finderPoses[2];
     const bottomLeft = finderPoses[3];
-    const [matrix, bits] = started ? run(canvas1) : [null, null];
+    const [matrix, bits] = run(canvas1);
     ctx.strokeStyle = "red";
     ctx.beginPath();
     ctx.moveTo(topLeft[0], topLeft[1]);
@@ -166,7 +212,6 @@ function main(source: HTMLVideoElement) {
     ctx.lineTo(bottomLeft[0], bottomLeft[1]);
     ctx.closePath();
     ctx.stroke();
-    if (!started) return;
     const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
     const canvas3 = <HTMLCanvasElement>document.getElementById("canvas3");
     const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
@@ -175,6 +220,7 @@ function main(source: HTMLVideoElement) {
     matrixToCanvas(bits, canvas4);
     drawDifference(canvas4, expected);
 
+    if (!started) return;
     try {
         let result = new WideQRDecoder().decodeBitMatrix(bits);
         handleResponse(result.getByteSegments()[0]);
@@ -292,7 +338,7 @@ function processCamera() {
         video.play().then(() => {
             resize(video);
             video.play();
-            for (let i = 0; i < 4; i++) setupFinder(i);
+            //for (let i = 0; i < 4; i++) setupFinder(i);
 
             setInterval(() => {
                 try {
@@ -379,6 +425,9 @@ document.getElementById("shake").addEventListener("click", () => {
         shake(0.25);
         $("#shake").text("Shake corner points");
     }, 0);
+});
+document.getElementById("search-finder").addEventListener("click", () => {
+    searchFinder();
 });
 document.getElementById("start").addEventListener("click", () => {
     started = true;

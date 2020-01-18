@@ -94,10 +94,10 @@ class WideQRBitMatrixParser {
 
     private buildFunctionPattern() {
         const bitMatrix = new BitMatrix(WIDTH, HEIGHT);
-        bitMatrix.setRegion(0, 0, 2, 2);
-        bitMatrix.setRegion(WIDTH - 2, 0, 2, 2);
-        bitMatrix.setRegion(0, HEIGHT - 2, 2, 2);
-        bitMatrix.setRegion(WIDTH - 2, HEIGHT - 2, 2, 2);
+        //bitMatrix.setRegion(0, 0, 2, 2);
+        //bitMatrix.setRegion(WIDTH - 2, 0, 2, 2);
+        //bitMatrix.setRegion(0, HEIGHT - 2, 2, 2);
+        //bitMatrix.setRegion(WIDTH - 2, HEIGHT - 2, 2, 2);
         return bitMatrix;
     }
 
