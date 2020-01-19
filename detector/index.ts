@@ -152,7 +152,7 @@ function searchFinder() {
     const points = Float32Array.from([0, 0, dimX, 0, dimX, dimY, 0, dimY]);
     transform.transformPoints(points);
     finderPoses = [[points[0], points[1]], [points[2], points[3]], [points[4], points[5]], [points[6], points[7]]];
-    prepend($("<div class='success'>searched finders ("+finderPoses.map(x => "("+x[0]+","+x[1]+")").join(",")+")</div>").get(0));
+    prepend($("<div class='success'>searched finders ("+finderPoses.map(x => "("+Math.round(x[0])+","+Math.round(x[1])+")").join(",")+")</div>").get(0));
 }
 
 function run(canvas1: HTMLCanvasElement) {
