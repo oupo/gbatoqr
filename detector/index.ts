@@ -310,7 +310,7 @@ function processCamera() {
         audio: false,
         video: {
             facingMode: "environment",
-            width: { ideal: 1536 },
+            width: { ideal: 2048 },
         }
     }).then(function (stream) {
         video.srcObject = stream;
