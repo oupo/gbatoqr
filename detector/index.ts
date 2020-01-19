@@ -389,6 +389,7 @@ document.getElementById("shake").addEventListener("click", () => {
             shake(i, 0.5);
             shake(i, 0.25);
             shake(i, 0.125);
+            shake(i, 0.0625);
         }
         $("#shake").text("Shake corner points");
     }, 250);

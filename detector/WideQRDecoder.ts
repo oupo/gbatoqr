@@ -7,11 +7,17 @@ import {
 
 const WIDTH = 252;
 const HEIGHT = 188;
-const DUMMY_VER = QRCodeVersion.getVersionForNumber(40);
-const ECBLOCKS = new QRCodeECBlocks(30, new QRCodeECB(14, 181), new QRCodeECB(14, 182));
-const REAL_VER = new QRCodeVersion(0, Int32Array.from([]), ECBLOCKS);
 const TOTAL_CODE_WORDS = Math.floor((WIDTH * HEIGHT) / 8);
-
+const ECC_LEN = 30;
+const NUM_BLOCKS = 30;
+const DUMMY_VER = QRCodeVersion.getVersionForNumber(40);
+const SHORT_BLOCK_LEN = Math.floor(TOTAL_CODE_WORDS / NUM_BLOCKS);
+const NUM_SHORT_BLOCKS = NUM_BLOCKS - TOTAL_CODE_WORDS % NUM_BLOCKS;
+const SHORT_BLOCK_LEN_WO_ECC = SHORT_BLOCK_LEN - ECC_LEN;
+const NUM_LONG_BLOCKS = NUM_BLOCKS - NUM_SHORT_BLOCKS;
+const LONG_BLOCK_LEN_WO_ECC = SHORT_BLOCK_LEN - ECC_LEN + 1;
+const ECBLOCKS = new QRCodeECBlocks(ECC_LEN, new QRCodeECB(NUM_SHORT_BLOCKS, SHORT_BLOCK_LEN_WO_ECC), new QRCodeECB(NUM_LONG_BLOCKS, LONG_BLOCK_LEN_WO_ECC));
+const REAL_VER = new QRCodeVersion(0, Int32Array.from([]), ECBLOCKS);
 
 export class WideQRDecoder {
     private rsDecoder: ReedSolomonDecoder;
