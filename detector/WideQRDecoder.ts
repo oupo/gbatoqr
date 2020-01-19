@@ -103,31 +103,21 @@ class WideQRBitMatrixParser {
 
     public readCodewords(): Uint8Array {
         WideQRDataMask.unmaskBitMatrix(this.bitMatrix);
-
-        const functionPattern = this.buildFunctionPattern();
-
-        let readingUp: boolean;
         const result = new Uint8Array(TOTAL_CODE_WORDS);
         let resultOffset = 0;
         let currentByte = 0;
         let bitsRead = 0;
-        for (let j = WIDTH - 1; j > 0; j -= 2) {
-            readingUp = ((j + 1) & 2) == 0;
-            for (let count = 0; count < HEIGHT; count++) {
-                const i = readingUp ? HEIGHT - 1 - count : count;
-                for (let col = 0; col < 2; col++) {
-                    if (!functionPattern.get(j - col, i)) {
-                        bitsRead++;
-                        currentByte <<= 1;
-                        if (this.bitMatrix.get(j - col, i)) {
-                            currentByte |= 1;
-                        }
-                        if (bitsRead === 8) {
-                            result[resultOffset++] = currentByte;
-                            bitsRead = 0;
-                            currentByte = 0;
-                        }
-                    }
+        for (let y = 0; y < HEIGHT; y ++) {
+            for (let x = 0; x < WIDTH; x ++) {
+                bitsRead++;
+                currentByte <<= 1;
+                if (this.bitMatrix.get(x, y)) {
+                    currentByte |= 1;
+                }
+                if (bitsRead === 8) {
+                    result[resultOffset++] = currentByte;
+                    bitsRead = 0;
+                    currentByte = 0;
                 }
             }
         }
