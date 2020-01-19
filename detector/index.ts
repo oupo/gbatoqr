@@ -391,7 +391,7 @@ document.getElementById("shake").addEventListener("click", () => {
             shake(i, 0.125);
         }
         $("#shake").text("Shake corner points");
-    }, 0);
+    }, 250);
 });
 document.getElementById("search-finder").addEventListener("click", () => {
     searchFinder();
