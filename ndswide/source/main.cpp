@@ -18,7 +18,7 @@ using std::uint8_t;
 int frameCount = 0;
 int lastFrameCount = 0;
 
-const int BLOCK_SIZE = 0x1200;
+const int BLOCK_SIZE = 0x900;
 
 void Vblank()
 {
@@ -78,7 +78,7 @@ void dumpQR(u16 *videoMemoryMain, int blockid, uint8_t *buf, int len)
 		for (int x = 0; x < w; x++)
 		{
 			int c = qr.getModule(x, y) ? 0 : 31;
-			fillRect(videoMemoryMain, 1 * x + 2, 1 * y + 2, 1, 1, ARGB16(1, c, c, c));
+			fillRect(videoMemoryMain, 1 * x + 2, 2 * y + 2, 1, 2, ARGB16(1, c, c, c));
 		}
 	}
 }

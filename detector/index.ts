@@ -29,8 +29,11 @@ let maxNum: number = undefined;
 let succeededTestData = false;
 
 
+const numPixelsX = 252;
+const numPixelsY = 188;
+
 const dimX = 252;
-const dimY = 188;
+const dimY = 94;
 
 //test();
 
@@ -91,14 +94,14 @@ function test2() {
     const ofs = 7;
     const transform = PerspectiveTransform.quadrilateralToQuadrilateral(
         ofs, ofs,
-        dimX - ofs, ofs,
-        dimX - ofs, dimY - ofs,
-        ofs, dimY - ofs,
+        numPixelsX - ofs, ofs,
+        numPixelsX - ofs, numPixelsY - ofs,
+        ofs, numPixelsY - ofs,
         newPatterns[0].getX(), newPatterns[0].getY(),
         newPatterns[1].getX(), newPatterns[1].getY(),
         newPatterns[3].getX(), newPatterns[3].getY(),
         newPatterns[2].getX(), newPatterns[2].getY());
-    const points = Float32Array.from([0, 0, dimX, 0, dimX, dimY, 0, dimY]);
+    const points = Float32Array.from([0, 0, numPixelsX, 0, numPixelsX, numPixelsY, 0, numPixelsY]);
     transform.transformPoints(points);
     console.log(points);
     ctx.strokeStyle = "red";
@@ -150,14 +153,14 @@ function searchFinder() {
     const ofs = 7;
     const transform = PerspectiveTransform.quadrilateralToQuadrilateral(
         ofs, ofs,
-        dimX - ofs, ofs,
-        dimX - ofs, dimY - ofs,
-        ofs, dimY - ofs,
+        numPixelsX - ofs, ofs,
+        numPixelsX - ofs, numPixelsY - ofs,
+        ofs, numPixelsY - ofs,
         newPatterns[0].getX(), newPatterns[0].getY(),
         newPatterns[1].getX(), newPatterns[1].getY(),
         newPatterns[3].getX(), newPatterns[3].getY(),
         newPatterns[2].getX(), newPatterns[2].getY());
-    const points = Float32Array.from([0, 0, dimX, 0, dimX, dimY, 0, dimY]);
+    const points = Float32Array.from([0, 0, numPixelsX, 0, numPixelsX, numPixelsY, 0, numPixelsY]);
     transform.transformPoints(points);
     finderPoses = [[points[0], points[1]], [points[2], points[3]], [points[4], points[5]], [points[6], points[7]]];
     prepend($("<div class='success'>searched finders ("+finderPoses.map(x => "("+Math.round(x[0])+","+Math.round(x[1])+")").join(",")+")</div>").get(0));
