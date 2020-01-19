@@ -104,7 +104,7 @@ void drawFinder(uint16_t *videoMemoryMain, int x, int y, u16 color) {
 
 void drawFinders(uint16_t *videoMemoryMain) {
 	drawFinder(videoMemoryMain, 2, 2, ARGB16(1, 16, 0, 0));
-	drawFinder(videoMemoryMain, 256 - 2 - 14, 2, ARGB16(1, 4, 9, 0));
+	drawFinder(videoMemoryMain, 256 - 2 - 14, 2, ARGB16(1, 3, 7, 0));
 	drawFinder(videoMemoryMain, 2, 192 - 2 - 14, ARGB16(1, 0, 11, 11));
 	drawFinder(videoMemoryMain, 256 - 2 - 14, 192 - 2 - 14, ARGB16(1, 9, 0, 18));
 	printf("drawed finders. push A\n");
