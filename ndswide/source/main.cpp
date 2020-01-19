@@ -18,6 +18,8 @@ using std::uint8_t;
 int frameCount = 0;
 int lastFrameCount = 0;
 
+const int BLOCK_SIZE = 0x1200;
+
 void Vblank()
 {
 	frameCount++;
@@ -76,42 +78,10 @@ void dumpQR(u16 *videoMemoryMain, int blockid, uint8_t *buf, int len)
 		for (int x = 0; x < w; x++)
 		{
 			int c = qr.getModule(x, y) ? 0 : 31;
-			fillRect(videoMemoryMain, 1 * x + 2, 2 * y + 2, 1, 2, ARGB16(1, c, c, c));
+			fillRect(videoMemoryMain, 1 * x + 2, 1 * y + 2, 1, 1, ARGB16(1, c, c, c));
 		}
 	}
 }
-
-QrCode makeQR(int blockid, uint8_t *buf, int len)
-{
-	std::vector<uint8_t> vec(4 + len);
-	vec[0] = blockid & 0xff;
-	vec[1] = (blockid >> 8) & 0xff;
-	vec[2] = (blockid >> 16) & 0xff;
-	vec[3] = (blockid >> 24) & 0xff;
-	std::copy(buf, buf + len, vec.begin() + 4);
-	std::vector<QrSegment> segs{QrSegment::makeEci(27), QrSegment::makeBytes(vec)};
-	int mask = 7;
-	return QrCode::encodeSegmentsWide(segs, mask);
-}
-
-void dumpQR2(u16 *videoMemoryMain, int blockid1, int blockid2, uint8_t *buf1, uint8_t *buf2, int len)
-{
-	QrCode qr1 = makeQR(blockid1, buf1, len);
-	QrCode qr2 = makeQR(blockid2, buf2, len);
-	int w = qr1.getWidth(), h = qr1.getHeight();
-	for (int y = 0; y < h; y++)
-	{
-		for (int x = 0; x < w; x++)
-		{
-			int c1 = qr1.getModule(x, y) ? 0 : 31;
-			int c2 = qr2.getModule(x, y) ? 0 : 31;
-			int c3 = c1 & c2;
-			fillRect(videoMemoryMain, 2 * x + 2, 2 * y + 2, 2, 2, ARGB16(1, c1, c2, c3));
-		}
-	}
-}
-
-const int BLOCK_SIZE = 0x900;
 
 void writeRandomData(std::vector<uint8_t> &data, uint32_t seed)
 {
@@ -171,7 +141,7 @@ void dump(const std::vector<std::pair<int, int>> &ranges)
 			if (keysDown() & KEY_START) {
 				return;
 			}
-			wait(60 * 0.5);
+			wait(60 * 0);
 		}
 	}
 	printf("Done!\n");
@@ -206,6 +176,7 @@ void parseRanges(const char *buf, std::vector<std::pair<int, int>> &ranges) {
 
 int main(void)
 {
+	QrCode::initialize(30);
 	irqSet(IRQ_VBLANK, Vblank);
 	consoleDemoInit();
 	Keyboard *kbd = keyboardDemoInit();

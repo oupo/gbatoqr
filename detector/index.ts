@@ -14,7 +14,6 @@ declare global { const JSZip : any; }
 import * as StackBlur from "stackblur-canvas";
 import { MyGridSampler } from "./MyGridSampler";
 import { WideQRDecoder } from "./WideQRDecoder";
-import { NotFoundException } from "../zxing-js/esm5";
 
 const MAX_OUTPUT = 50;
 const MAX_ROM_BYTES = 32 * 1024 * 1024;
@@ -31,7 +30,7 @@ let succeededTestData = false;
 
 
 const dimX = 252;
-const dimY = 94;
+const dimY = 188;
 
 //test();
 
@@ -93,13 +92,13 @@ function test2() {
     const transform = PerspectiveTransform.quadrilateralToQuadrilateral(
         ofs, ofs,
         dimX - ofs, ofs,
-        dimX - ofs, 2 * dimY - ofs,
-        ofs, 2 * dimY - ofs,
+        dimX - ofs, dimY - ofs,
+        ofs, dimY - ofs,
         newPatterns[0].getX(), newPatterns[0].getY(),
         newPatterns[1].getX(), newPatterns[1].getY(),
         newPatterns[3].getX(), newPatterns[3].getY(),
         newPatterns[2].getX(), newPatterns[2].getY());
-    const points = Float32Array.from([0, 0, dimX, 0, dimX, 2 * dimY, 0, 2 * dimY]);
+    const points = Float32Array.from([0, 0, dimX, 0, dimX, dimY, 0, dimY]);
     transform.transformPoints(points);
     console.log(points);
     ctx.strokeStyle = "red";
@@ -144,13 +143,13 @@ function searchFinder() {
     const transform = PerspectiveTransform.quadrilateralToQuadrilateral(
         ofs, ofs,
         dimX - ofs, ofs,
-        dimX - ofs, 2 * dimY - ofs,
-        ofs, 2 * dimY - ofs,
+        dimX - ofs, dimY - ofs,
+        ofs, dimY - ofs,
         newPatterns[0].getX(), newPatterns[0].getY(),
         newPatterns[1].getX(), newPatterns[1].getY(),
         newPatterns[3].getX(), newPatterns[3].getY(),
         newPatterns[2].getX(), newPatterns[2].getY());
-    const points = Float32Array.from([0, 0, dimX, 0, dimX, 2 * dimY, 0, 2 * dimY]);
+    const points = Float32Array.from([0, 0, dimX, 0, dimX, dimY, 0, dimY]);
     transform.transformPoints(points);
     finderPoses = [[points[0], points[1]], [points[2], points[3]], [points[4], points[5]], [points[6], points[7]]];
     prepend($("<div class='success'>searched finders</div>").get(0));
