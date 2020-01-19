@@ -152,8 +152,7 @@ function searchFinder() {
     const points = Float32Array.from([0, 0, dimX, 0, dimX, dimY, 0, dimY]);
     transform.transformPoints(points);
     finderPoses = [[points[0], points[1]], [points[2], points[3]], [points[4], points[5]], [points[6], points[7]]];
-    prepend($("<div class='success'>searched finders</div>").get(0));
-
+    prepend($("<div class='success'>searched finders ("+finderPoses.map(x => "("+x[0]+","+x[1]+")").join(",")+")</div>").get(0));
 }
 
 function run(canvas1: HTMLCanvasElement) {
@@ -197,7 +196,11 @@ function main(source: HTMLVideoElement) {
     const topRight = finderPoses[1];
     const bottomRight = finderPoses[2];
     const bottomLeft = finderPoses[3];
-    const [matrix, bits] = run(canvas1);
+    let matrix: BitMatrix;
+    let bits: BitMatrix;
+    try {
+        [matrix, bits] = run(canvas1);
+    } catch(e) {}
     ctx.strokeStyle = "red";
     ctx.beginPath();
     ctx.moveTo(topLeft[0], topLeft[1]);
@@ -212,13 +215,15 @@ function main(source: HTMLVideoElement) {
         ctx.arc(finderPoses[i][0], finderPoses[i][1], 3, 0, 2 * Math.PI);
         ctx.fill();
     }
-    const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
-    const canvas3 = <HTMLCanvasElement>document.getElementById("canvas3");
-    const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
-    matrixToCanvas(matrix, canvas2);
-    matrixToCanvas(bits, canvas3);
-    matrixToCanvas(bits, canvas4);
-    drawDifference(canvas4, expected);
+    if (matrix && bits) {
+        const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
+        const canvas3 = <HTMLCanvasElement>document.getElementById("canvas3");
+        const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
+        matrixToCanvas(matrix, canvas2);
+        matrixToCanvas(bits, canvas3);
+        matrixToCanvas(bits, canvas4);
+        drawDifference(canvas4, expected);
+    }
 
     if (!started) return;
     try {
