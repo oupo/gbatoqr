@@ -297,11 +297,12 @@ function processCamera() {
         audio: false,
         video: {
             facingMode: "environment",
-            width: { ideal: 1280 },
+            width: { ideal: 2048 },
         }
     }).then(function (stream) {
         video.srcObject = stream;
         video.play().then(() => {
+            prepend($("<div class='success' />").text("started camera: "+video.videoWidth+","+video.videoHeight).get(0));
             resize(video);
             setInterval(() => {
                 try {
