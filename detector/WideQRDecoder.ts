@@ -6,9 +6,9 @@ import {
 } from "../zxing-js/src/index";
 
 const WIDTH = 252;
-const HEIGHT = 94;
+const HEIGHT = 188;
 const DUMMY_VER = QRCodeVersion.getVersionForNumber(40);
-const ECBLOCKS = new QRCodeECBlocks(30, new QRCodeECB(3, 125), new QRCodeECB(16, 126));
+const ECBLOCKS = new QRCodeECBlocks(30, new QRCodeECB(14, 181), new QRCodeECB(14, 182));
 const REAL_VER = new QRCodeVersion(0, Int32Array.from([]), ECBLOCKS);
 const TOTAL_CODE_WORDS = Math.floor((WIDTH * HEIGHT) / 8);
 
