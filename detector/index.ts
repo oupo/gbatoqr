@@ -132,11 +132,19 @@ function searchFinder() {
         prepend($("<div class='failed'>not found</div>").get(0));
         return;
     }
+    let centerX = 0, centerY = 0;
+    for (let pattern of patterns) {
+        centerX += pattern.getX() / 4;
+        centerY += pattern.getY() / 4;
+    }
     const hues: number[] = [];
     for (let pattern of patterns) {
-        const imageData = ctx.getImageData(pattern.getX(), pattern.getY(), 1, 1);
+        const imageData = ctx.getImageData((pattern.getX() + centerX) / 2, (pattern.getY() + centerY) / 2, 2, 2);
         const data = imageData.data;
-        hues.push(rgbToHsl(data[0], data[1], data[2])[0]);
+        const avgR = (imageData.data[0] + imageData.data[4] + imageData.data[8] + imageData.data[12]) / 4;
+        const avgG = (imageData.data[1] + imageData.data[5] + imageData.data[9] + imageData.data[13]) / 4;
+        const avgB = (imageData.data[2] + imageData.data[6] + imageData.data[10] + imageData.data[14]) / 4;
+        hues.push(rgbToHsl(avgR, avgG, avgB)[0]);
     }
     let newPatterns = iota(4).sort((i, j) => hues[i] - hues[j]).map(i => patterns[i]);
     const ofs = 7;
