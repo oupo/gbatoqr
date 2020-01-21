@@ -18,7 +18,12 @@ using std::uint8_t;
 int frameCount = 0;
 int lastFrameCount = 0;
 
-const int BLOCK_SIZE = 0x900;
+const int MARGIN = 5;
+const int QR_WIDTH = 252 - MARGIN * 2;
+const int QR_HEIGHT = 94 - MARGIN * 2;
+const int QR_ECC_LEN = 30;
+const int QR_NUM_BLOCKS = 19;
+const int BLOCK_SIZE = 0x700;
 
 void Vblank()
 {
@@ -70,15 +75,14 @@ void dumpQR(u16 *videoMemoryMain, int blockid, uint8_t *buf, int len)
 	std::copy(buf, buf + len, vec.begin() + 4);
 	std::vector<QrSegment> segs{QrSegment::makeEci(27), QrSegment::makeBytes(vec)};
 	int mask = 7;
-	const QrCode qr = QrCode::encodeSegmentsWide(segs, mask);
+	const QrCode qr = QrCode::encodeSegmentsWide(segs, mask, QR_WIDTH, QR_HEIGHT, QR_ECC_LEN, QR_NUM_BLOCKS);
 
-	int w = qr.getWidth(), h = qr.getHeight();
-	for (int y = 0; y < h; y++)
+	for (int y = 0; y < QR_HEIGHT; y++)
 	{
-		for (int x = 0; x < w; x++)
+		for (int x = 0; x < QR_WIDTH; x++)
 		{
 			int c = qr.getModule(x, y) ? 0 : 31;
-			fillRect(videoMemoryMain, 1 * x + 2, 2 * y + 2, 1, 2, ARGB16(1, c, c, c));
+			fillRect(videoMemoryMain, 1 * (x + MARGIN) + 2, 2 * (y + MARGIN) + 2, 1, 2, ARGB16(1, c, c, c));
 		}
 	}
 }
@@ -116,6 +120,39 @@ void drawFinders(uint16_t *videoMemoryMain) {
 	waitKey();
 }
 
+int rnd(uint32_t &s) {
+	s = s ^ (s << 13); s = s ^ (s >> 17); s = s ^ (s << 5);
+	return s;
+}
+
+void drawSide(uint16_t *videoMemoryMain) {
+	uint32_t s = 1;
+	for (int y = 0; y < MARGIN; y++) {
+		for (int x = 0; x < QR_WIDTH + MARGIN; x++) {
+			int c = rnd(s) & 1 ? 31 : 0;
+			fillRect(videoMemoryMain, 1 * x + 2, 2 * y + 2, 1, 2, ARGB16(1, c, c, c));
+		}
+	}
+	for (int y = 0; y < QR_HEIGHT + MARGIN; y++) {
+		for (int x = QR_WIDTH + MARGIN; x < QR_WIDTH + 2 * MARGIN; x++) {
+			int c = rnd(s) & 1 ? 31 : 0;
+			fillRect(videoMemoryMain, 1 * x + 2, 2 * y + 2, 1, 2, ARGB16(1, c, c, c));
+		}
+	}
+	for (int y = QR_HEIGHT + MARGIN; y < QR_HEIGHT + 2 * MARGIN; y++) {
+		for (int x = MARGIN; x < QR_WIDTH + 2 * MARGIN; x++) {
+			int c = rnd(s) & 1 ? 31 : 0;
+			fillRect(videoMemoryMain, 1 * x + 2, 2 * y + 2, 1, 2, ARGB16(1, c, c, c));
+		}
+	}
+	for (int y = MARGIN; y < QR_HEIGHT + 2 * MARGIN; y++) {
+		for (int x = 0; x < MARGIN; x++) {
+			int c = rnd(s) & 1 ? 31 : 0;
+			fillRect(videoMemoryMain, 1 * x + 2, 2 * y + 2, 1, 2, ARGB16(1, c, c, c));
+		}
+	}
+}
+
 void dump(const std::vector<std::pair<int, int>> &ranges)
 {
 	videoSetMode(MODE_5_2D);
@@ -127,6 +164,8 @@ void dump(const std::vector<std::pair<int, int>> &ranges)
 	drawFinders(videoMemoryMain);
 	std::vector<uint8_t> testdata;
 	writeRandomData(testdata, 0xdeadbeef);
+	drawSide(videoMemoryMain);
+	return;
 	dumpQR(videoMemoryMain, 0xffffffff, &testdata[0], BLOCK_SIZE);
 	printf("drawed test data. push A\n");
 	waitKey();
@@ -199,6 +238,5 @@ int main(void)
 		parseRanges(buf, ranges);
 		dump(ranges);
 	}
-
 	return 0;
 }
