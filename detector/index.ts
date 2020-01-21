@@ -16,15 +16,11 @@ import { MyGridSampler } from "./MyGridSampler";
 import { WideQRDecoder } from "./WideQRDecoder";
 
 const MAX_OUTPUT = 50;
-const MAX_ROM_BYTES = 32 * 1024 * 1024;
-const BLOCK_SIZE = 0x1c0;
 const video = <HTMLVideoElement>document.getElementById('video');
 const output = document.getElementById("output");
-const img = <HTMLImageElement>document.getElementById("image");
 const expected = <HTMLImageElement>document.getElementById("expected");
 let finderPoses: Array<[number, number]> = [[10, 10], [30, 10], [30, 30], [10, 30]];
 let romdata: ArrayBuffer[] = [];
-let started = true;
 let maxNum: number = undefined;
 let succeededTestData = false;
 
@@ -236,7 +232,6 @@ function main(source: HTMLVideoElement) {
         drawDifference(canvas4, expected);
     }
 
-    if (!started) return;
     try {
         let result = new WideQRDecoder().decodeBitMatrix(bits);
         handleResponse(result.getByteSegments()[0]);
@@ -399,16 +394,6 @@ document.getElementById("shake").addEventListener("click", () => {
 });
 document.getElementById("search-finder").addEventListener("click", () => {
     searchFinder();
-});
-document.getElementById("start").addEventListener("click", () => {
-    started = true;
-    $("#start").text("started");
-});
-document.getElementById("reset").addEventListener("click", () => {
-    started = false;
-    $("#start").text("Start");
-    romdata = [];
-    succeededTestData = false;
 });
 
 
