@@ -22,8 +22,8 @@ const int MARGIN = 5;
 const int QR_WIDTH = 252 - MARGIN * 2;
 const int QR_HEIGHT = 94 - MARGIN * 2;
 const int QR_ECC_LEN = 30;
-const int QR_NUM_BLOCKS = 19;
-const int BLOCK_SIZE = 0x700;
+const int QR_NUM_BLOCKS = 16;
+const int BLOCK_SIZE = 0x800;
 
 void Vblank()
 {
@@ -184,7 +184,7 @@ void dump(const std::vector<std::pair<int, int>> &ranges)
 			if (keysDown() & KEY_START) {
 				return;
 			}
-			wait(60 * 0.5);
+			wait(60 * 0.25);
 		}
 	}
 	printf("Done!\n");
