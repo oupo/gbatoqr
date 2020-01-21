@@ -55,9 +55,9 @@ function searchFinder() {
     const threshold = Number((<HTMLInputElement>document.getElementById("threshold")).value);
     const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
     const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
-    const w = canvas1.width, h = canvas1.height;
+    const w = video.width, h = video.height;
     const ctx = canvas1.getContext("2d");
-    videoToCanvas(video);
+    videoToCanvas(video, [0, 0, w, h]);
     const source = new HTMLCanvasElementLuminanceSource(canvas1);
     const hybridBinarizer = new HybridBinarizer(source, threshold);
     const bitmap = new BinaryBitmap(hybridBinarizer);
@@ -104,7 +104,8 @@ function searchFinder() {
 
 function run(canvas1: HTMLCanvasElement) {
     const threshold = Number((<HTMLInputElement>document.getElementById("threshold")).value);
-    const w = canvas1.width, h = canvas1.height;
+    let clip = posesToClip(finderPoses);
+    let [x, y, w, h] = clip;
     const topLeft = finderPoses[0];
     const topRight = finderPoses[1];
     const bottomRight = finderPoses[2];
@@ -118,27 +119,40 @@ function run(canvas1: HTMLCanvasElement) {
         dimX, 0,
         dimX, dimY,
         0, dimY,
-        topLeft[0], topLeft[1],
-        topRight[0], topRight[1],
-        bottomRight[0], bottomRight[1],
-        bottomLeft[0], bottomLeft[1]);
+        topLeft[0] - x, topLeft[1] - y,
+        topRight[0] - x, topRight[1] - y,
+        bottomRight[0] - x, bottomRight[1] - y,
+        bottomLeft[0] - x, bottomLeft[1] - y);
     const sampler = new MyGridSampler();
     const bits = sampler.sampleGridWithTransform(matrix, dimX, dimY, transform);
     return [matrix, bits];
 }
 
-function videoToCanvas(video: HTMLVideoElement) {
+function videoToCanvas(video: HTMLVideoElement, clip: number[]) {
     const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
     const ctx = canvas1.getContext("2d");
-    const w = video.width, h = video.height;
+    const [x, y, w, h] = clip;
     canvas1.width = w, canvas1.height = h;
-    ctx.drawImage(video, 0, 0, w, h);
+    ctx.drawImage(video, x, y, w, h, 0, 0, w, h);
+}
+
+function posesToClip(poses: [number, number][]) {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (let pos of poses) {
+        minX = Math.min(minX, Math.floor(pos[0]));
+        maxX = Math.max(maxX, Math.ceil(pos[0]));
+        minY = Math.min(minY, Math.floor(pos[1]));
+        maxY = Math.max(maxY, Math.ceil(pos[1]));
+    }
+    return [minX, minY, maxX - minX + 1, maxY - minY + 1];
 }
 
 function main(source: HTMLVideoElement) {
     const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
     const ctx = canvas1.getContext("2d");
-    videoToCanvas(source);
+    let clip = posesToClip(finderPoses);
+    let [x, y] = clip;
+    videoToCanvas(source, clip);
     const topLeft = finderPoses[0];
     const topRight = finderPoses[1];
     const bottomRight = finderPoses[2];
@@ -150,16 +164,16 @@ function main(source: HTMLVideoElement) {
     } catch(e) {}
     ctx.strokeStyle = "red";
     ctx.beginPath();
-    ctx.moveTo(topLeft[0], topLeft[1]);
-    ctx.lineTo(topRight[0], topRight[1]);
-    ctx.lineTo(bottomRight[0], bottomRight[1]);
-    ctx.lineTo(bottomLeft[0], bottomLeft[1]);
+    ctx.moveTo(topLeft[0] - x, topLeft[1] - y);
+    ctx.lineTo(topRight[0] - x, topRight[1] - y);
+    ctx.lineTo(bottomRight[0] - x, bottomRight[1] - y);
+    ctx.lineTo(bottomLeft[0] - x, bottomLeft[1] - y);
     ctx.closePath();
     ctx.stroke();
     for (let i = 0; i < 4; i ++) {
         ctx.fillStyle = "hsl("+([0, 1, 3, 2][i]*90)+", 100%, 50%)";
         ctx.beginPath();
-        ctx.arc(finderPoses[i][0], finderPoses[i][1], 3, 0, 2 * Math.PI);
+        ctx.arc(finderPoses[i][0] - x, finderPoses[i][1] - y, 3, 0, 2 * Math.PI);
         ctx.fill();
     }
     if (matrix && bits) {
@@ -170,13 +184,12 @@ function main(source: HTMLVideoElement) {
         matrixToCanvas(bits, canvas3);
         matrixToCanvas(bits, canvas4);
         drawDifference(canvas4, expected);
-    }
-
-    try {
-        let result = new WideQRDecoder().decodeBitMatrix(bits);
-        handleResponse(result.getByteSegments()[0]);
-    } catch(e) {
-        if (!(e instanceof ChecksumException)) console.error(e);
+        try {
+            let result = new WideQRDecoder().decodeBitMatrix(bits);
+            handleResponse(result.getByteSegments()[0]);
+        } catch(e) {
+            if (!(e instanceof ChecksumException)) console.error(e);
+        }
     }
 }
 
@@ -255,13 +268,17 @@ function processCamera() {
     }).then(function (stream) {
         video.srcObject = stream;
         video.play().then(() => {
-            prepend($("<div class='success' />").text("started camera: "+video.videoWidth+","+video.videoHeight).get(0));
+            prepend($("<div class='success' />").text("started camera: "+video.videoWidth+"x"+video.videoHeight).get(0));
             resize(video);
+            let width = video.width, height = video.height;
+            finderPoses = [[0, 0], [width - 1, 0], [width - 1, height - 1], [0, height - 1]];
             setInterval(() => {
                 try {
+                    let startTime = Date.now();
                     main(video);
+                    document.title = String(Date.now() - startTime);
                 } catch (e) { console.error(e); }
-            }, 100);
+            }, 50);
         });
         //video.addEventListener("resize", () => {
         //    resize(video);
@@ -270,7 +287,6 @@ function processCamera() {
 }
 
 function shake(index: number, mag: number, marginOnly: boolean) {
-    videoToCanvas(video);
     let bytes = imgToByteArray(expected);
     const dx = [-1, 0, 0, 1, 0];
     const dy = [0, -1, 1, 0, 0];
@@ -317,12 +333,13 @@ document.getElementById("save-button").addEventListener("click", () => {
         zip.file(String(num).padStart(6, "0"), romdata[num]);
     }
     zip.generateAsync({ type: "blob" })
-        .then(function (content) {
+        .then(function (content: any) {
             saveAs(content, "gbarom.zip");
         });
 });
 
 function runShake(marginOnly: boolean) {
+    videoToCanvas(video, [0, 0, video.width - 1, video.height - 1]);
     for (let i = 0; i < 4; i ++) {
         shake(i, 1, marginOnly);
         shake(i, 0.5, marginOnly);
