@@ -165,7 +165,6 @@ void dump(const std::vector<std::pair<int, int>> &ranges)
 	std::vector<uint8_t> testdata;
 	writeRandomData(testdata, 0xdeadbeef);
 	drawSide(videoMemoryMain);
-	return;
 	dumpQR(videoMemoryMain, 0xffffffff, &testdata[0], BLOCK_SIZE);
 	printf("drawed test data. push A\n");
 	waitKey();

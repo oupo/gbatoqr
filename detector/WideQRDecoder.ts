@@ -5,8 +5,9 @@ import {
     QRCodeECBlocks, QRCodeECB
 } from "../zxing-js/src/index";
 
-const WIDTH = 252;
-const HEIGHT = 94;
+const MARGIN = 5;
+const WIDTH = 252 - MARGIN * 2;
+const HEIGHT = 94 - MARGIN * 2;
 const TOTAL_CODE_WORDS = Math.floor((WIDTH * HEIGHT) / 8);
 const ECC_LEN = 30;
 const NUM_BLOCKS = 19;
@@ -79,7 +80,7 @@ class WideQRDataMask {
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
                 if (this.isMasked(x, y)) {
-                    bits.flip(x, y);
+                    bits.flip(MARGIN + x, MARGIN + y);
                 }
             }
         }
@@ -98,15 +99,6 @@ class WideQRBitMatrixParser {
         return bit ? (versionBits << 1) | 0x1 : versionBits << 1;
     }
 
-    private buildFunctionPattern() {
-        const bitMatrix = new BitMatrix(WIDTH, HEIGHT);
-        //bitMatrix.setRegion(0, 0, 2, 2);
-        //bitMatrix.setRegion(WIDTH - 2, 0, 2, 2);
-        //bitMatrix.setRegion(0, HEIGHT - 2, 2, 2);
-        //bitMatrix.setRegion(WIDTH - 2, HEIGHT - 2, 2, 2);
-        return bitMatrix;
-    }
-
     public readCodewords(): Uint8Array {
         WideQRDataMask.unmaskBitMatrix(this.bitMatrix);
         const result = new Uint8Array(TOTAL_CODE_WORDS);
@@ -117,7 +109,7 @@ class WideQRBitMatrixParser {
             for (let x = 0; x < WIDTH; x ++) {
                 bitsRead++;
                 currentByte <<= 1;
-                if (this.bitMatrix.get(x, y)) {
+                if (this.bitMatrix.get(MARGIN + x, MARGIN + y)) {
                     currentByte |= 1;
                 }
                 if (bitsRead === 8) {

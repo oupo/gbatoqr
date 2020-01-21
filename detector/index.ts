@@ -24,7 +24,7 @@ let romdata: ArrayBuffer[] = [];
 let maxNum: number = undefined;
 let succeededTestData = false;
 
-
+const MARGIN = 5;
 const numPixelsX = 252;
 const numPixelsY = 188;
 
@@ -240,13 +240,15 @@ function main(source: HTMLVideoElement) {
     }
 }
 
-function calculateDifference(bits: BitMatrix, srcBytes: Uint8ClampedArray) {
+function calculateDifference(bits: BitMatrix, srcBytes: Uint8ClampedArray, marginOnly: boolean) {
     let w = bits.getWidth(), h = bits.getHeight();
     let count = 0;
     let i = 0;
     for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
-            if ((bits.get(x, y) ? 0 : 255) !== srcBytes[i]) count++;
+            if (!(marginOnly && MARGIN <= y && y <= h - MARGIN && MARGIN <= x && x <= w - MARGIN)) {
+                if ((bits.get(x, y) ? 0 : 255) !== srcBytes[i]) count++;
+            }
             i += 4;
         }
     }
@@ -327,7 +329,7 @@ function processCamera() {
     });
 }
 
-function shake(index: number, mag: number) {
+function shake(index: number, mag: number, marginOnly: boolean) {
     videoToCanvas(video);
     let bytes = imgToByteArray(expected);
     const dx = [-1, 0, 0, 1, 0];
@@ -335,7 +337,7 @@ function shake(index: number, mag: number) {
     let min = Infinity;
     let argmin: number = null;
     for (let i = 0; i < 5; i++) {
-        let num = shake0(mag, bytes, index, [dx[i], dy[i]]);
+        let num = shake0(mag, bytes, index, [dx[i], dy[i]], marginOnly);
         if (num < min) {
             min = num;
             argmin = i;
@@ -347,7 +349,7 @@ function shake(index: number, mag: number) {
     finderPoses[index] = [finderPoses[index][0] + mag * valueToShake[0], finderPoses[index][1] + mag * valueToShake[1]];
 }
 
-function shake0(mag: number, bytes: Uint8ClampedArray, index: number, valueToShake: number[]) {
+function shake0(mag: number, bytes: Uint8ClampedArray, index: number, valueToShake: number[], marginOnly: boolean) {
     const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
     const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
     const finderPosesBackup = finderPoses;
@@ -355,7 +357,7 @@ function shake0(mag: number, bytes: Uint8ClampedArray, index: number, valueToSha
     finderPoses[index] = [finderPoses[index][0] + mag * valueToShake[0], finderPoses[index][1] + mag * valueToShake[1]];
     const [matrix, bits] = run(canvas1);
     finderPoses = finderPosesBackup;    
-    return calculateDifference(bits, bytes);
+    return calculateDifference(bits, bytes, marginOnly);
 }
 
 function resize(video: HTMLVideoElement) {
@@ -379,17 +381,30 @@ document.getElementById("save-button").addEventListener("click", () => {
             saveAs(content, "gbarom.zip");
         });
 });
+
+function runShake(marginOnly: boolean) {
+    for (let i = 0; i < 4; i ++) {
+        shake(i, 1, marginOnly);
+        shake(i, 0.5, marginOnly);
+        shake(i, 0.25, marginOnly);
+        shake(i, 0.125, marginOnly);
+        shake(i, 0.0625, marginOnly);
+    }
+}
+
 document.getElementById("shake").addEventListener("click", () => {
     $("#shake").text("Shaking...");
     setTimeout(() => {
-        for (let i = 0; i < 4; i ++) {
-            shake(i, 1);
-            shake(i, 0.5);
-            shake(i, 0.25);
-            shake(i, 0.125);
-            shake(i, 0.0625);
-        }
-        $("#shake").text("Shake corner points");
+        runShake(false);
+        $("#shake").text("Shake");
+    }, 250);
+});
+
+document.getElementById("shake-with-margin").addEventListener("click", () => {
+    $("#shake-with-margin").text("Shaking...");
+    setTimeout(() => {
+        runShake(true);
+        $("#shake-with-margin").text("Shake with margin");
     }, 250);
 });
 document.getElementById("search-finder").addEventListener("click", () => {
