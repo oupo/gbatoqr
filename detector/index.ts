@@ -339,7 +339,7 @@ document.getElementById("save-button").addEventListener("click", () => {
 });
 
 function runShake(marginOnly: boolean) {
-    videoToCanvas(video, [0, 0, video.width - 1, video.height - 1]);
+    videoToCanvas(video, [0, 0, video.width, video.height]);
     for (let i = 0; i < 4; i ++) {
         shake(i, 1, marginOnly);
         shake(i, 0.5, marginOnly);
