@@ -1,9 +1,8 @@
 import {
-    BrowserQRCodeReader, QRCodeReader,
     HTMLCanvasElementLuminanceSource, HybridBinarizer,
     BinaryBitmap, BitMatrix,
-    QRCodeDecoder, DetectorResult, GridSamplerInstance, PerspectiveTransform,
-    GridSampler, ChecksumException, QRCodeFinderPatternFinder, QRCodeFinderPattern, NotFoundException
+    PerspectiveTransform,
+    ChecksumException, QRCodeFinderPatternFinder, QRCodeFinderPattern, NotFoundException
 } from "../zxing-js/src/index";
 import { saveAs } from "file-saver";
 import { rgbToHsl } from "./rgbToHsl";
