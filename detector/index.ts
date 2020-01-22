@@ -311,7 +311,7 @@ function processCamera() {
                 try {
                     let startTime = Date.now();
                     main(video);
-                    document.title = String(Date.now() - startTime);
+                    $("#time").text(String(Date.now() - startTime) + " msec");
                 } catch (e) { console.error(e); }
             }, 50);
         });
