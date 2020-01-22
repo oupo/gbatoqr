@@ -4,7 +4,7 @@
 
 This repository consists of the following two programs.
 
-* A NDS program for dumping GBA ROMs as 2D codes (ndswide folder)
+* A NDS program for dumping GBA ROMs as 2D codes (nds folder)
 * A program that scans the 2D codes (detector folder)
 
 ## How to build the NDS program
@@ -12,7 +12,7 @@ This repository consists of the following two programs.
 devkitPro is required.
 
 First, execute `./copy-submodule-files.sh` in the repository root directory.
-Second, execute the `make` command in the ndswide directory.
+Second, execute the `make` command in the nds directory.
 
 ## How to run the scanning program
 

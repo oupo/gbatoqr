@@ -14,7 +14,7 @@ include $(DEVKITARM)/ds_rules
 # SOURCES is a list of directories containing source code
 # INCLUDES is a list of directories containing extra header files
 #---------------------------------------------------------------------------------
-TARGET		:=	gbatoqr
+TARGET		:=	gbatoqrwide
 BUILD		:=	build
 SOURCES		:=	gfx source data  
 INCLUDES	:=	include build
