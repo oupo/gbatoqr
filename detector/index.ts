@@ -3,7 +3,7 @@ import {
     HTMLCanvasElementLuminanceSource, HybridBinarizer,
     BinaryBitmap, BitMatrix,
     QRCodeDecoder, DetectorResult, GridSamplerInstance, PerspectiveTransform,
-    GridSampler, ChecksumException, QRCodeFinderPatternFinder, QRCodeFinderPattern
+    GridSampler, ChecksumException, QRCodeFinderPatternFinder, QRCodeFinderPattern, NotFoundException
 } from "../zxing-js/src/index";
 import { saveAs } from "file-saver";
 import { rgbToHsl } from "./rgbToHsl";
@@ -159,7 +159,12 @@ function run(canvas1: HTMLCanvasElement, clip: number[]) {
         bottomRight[0] - x, bottomRight[1] - y,
         bottomLeft[0] - x, bottomLeft[1] - y);
     const sampler = new MyGridSampler();
-    const bits = sampler.sampleGridWithTransform(matrix, dimX, dimY, transform);
+    let bits: BitMatrix = null;
+    try {
+        bits = sampler.sampleGridWithTransform(matrix, dimX, dimY, transform);
+    } catch(e) {
+        if (!(e instanceof NotFoundException)) throw e;
+    }
     return [matrix, bits];
 }
 
@@ -192,11 +197,7 @@ function main(source: HTMLVideoElement) {
     const topRight = finderPoses[1];
     const bottomRight = finderPoses[2];
     const bottomLeft = finderPoses[3];
-    let matrix: BitMatrix;
-    let bits: BitMatrix;
-    try {
-        [matrix, bits] = run(canvas1, clip);
-    } catch(e) {}
+    const [matrix, bits] = run(canvas1, clip);
     ctx.strokeStyle = "red";
     ctx.beginPath();
     ctx.moveTo(topLeft[0] - x, topLeft[1] - y);
@@ -223,7 +224,7 @@ function main(source: HTMLVideoElement) {
             let result = new WideQRDecoder().decodeBitMatrix(bits);
             handleResponse(result.getByteSegments()[0]);
         } catch(e) {
-            if (!(e instanceof ChecksumException)) console.error(e);
+            if (!(e instanceof ChecksumException)) throw e;
         }
     }
 }
