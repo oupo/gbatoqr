@@ -33,6 +33,42 @@ const dimY = 94;
 
 //test();
 
+if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    processCamera();
+} else {
+    alert("The browser does not support camera.");
+}
+
+document.getElementById("save-button").addEventListener("click", () => {
+    let zip = new JSZip();
+    for (let num in romdata) {
+        zip.file(String(num).padStart(6, "0"), romdata[num]);
+    }
+    zip.generateAsync({ type: "blob" })
+        .then(function (content: any) {
+            saveAs(content, "gbarom.zip");
+        });
+});
+
+document.getElementById("shake").addEventListener("click", () => {
+    $("#shake").text("Shaking...");
+    setTimeout(() => {
+        runShake(false);
+        $("#shake").text("Shake");
+    }, 250);
+});
+
+document.getElementById("shake-with-margin").addEventListener("click", () => {
+    $("#shake-with-margin").text("Shaking...");
+    setTimeout(() => {
+        runShake(true);
+        $("#shake-with-margin").text("Shake with margin");
+    }, 250);
+});
+document.getElementById("search-finder").addEventListener("click", () => {
+    searchFinder();
+});
+
 function test() {
     let byteArray = imgToByteArray(expected);
     let w = expected.width, h = expected.height;
@@ -317,23 +353,6 @@ function resize(video: HTMLVideoElement) {
     video.width = w, video.height = h;
 }
 
-if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    processCamera();
-} else {
-    alert("The browser does not support camera.");
-}
-
-document.getElementById("save-button").addEventListener("click", () => {
-    let zip = new JSZip();
-    for (let num in romdata) {
-        zip.file(String(num).padStart(6, "0"), romdata[num]);
-    }
-    zip.generateAsync({ type: "blob" })
-        .then(function (content: any) {
-            saveAs(content, "gbarom.zip");
-        });
-});
-
 function runShake(marginOnly: boolean) {
     videoToCanvas(video, [0, 0, video.width, video.height]);
     for (let i = 0; i < 4; i ++) {
@@ -344,26 +363,6 @@ function runShake(marginOnly: boolean) {
         shake(i, 0.0625, marginOnly);
     }
 }
-
-document.getElementById("shake").addEventListener("click", () => {
-    $("#shake").text("Shaking...");
-    setTimeout(() => {
-        runShake(false);
-        $("#shake").text("Shake");
-    }, 250);
-});
-
-document.getElementById("shake-with-margin").addEventListener("click", () => {
-    $("#shake-with-margin").text("Shaking...");
-    setTimeout(() => {
-        runShake(true);
-        $("#shake-with-margin").text("Shake with margin");
-    }, 250);
-});
-document.getElementById("search-finder").addEventListener("click", () => {
-    searchFinder();
-});
-
 
 function handleResponse(array8: Uint8Array) {
     let num = (array8[0] | (array8[1] << 8) | (array8[2] << 16) | (array8[3] << 24)) >>> 0;
