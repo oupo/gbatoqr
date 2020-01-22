@@ -279,9 +279,6 @@ function processCamera() {
                 } catch (e) { console.error(e); }
             }, 50);
         });
-        //video.addEventListener("resize", () => {
-        //    resize(video);
-        //});
     });
 }
 
