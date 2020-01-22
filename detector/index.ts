@@ -102,9 +102,8 @@ function searchFinder() {
     prepend($("<div class='success'>searched finders ("+finderPoses.map(x => "("+Math.round(x[0])+","+Math.round(x[1])+")").join(",")+")</div>").get(0));
 }
 
-function run(canvas1: HTMLCanvasElement) {
+function run(canvas1: HTMLCanvasElement, clip: number[]) {
     const threshold = Number((<HTMLInputElement>document.getElementById("threshold")).value);
-    let clip = posesToClip(finderPoses);
     let [x, y, w, h] = clip;
     const topLeft = finderPoses[0];
     const topRight = finderPoses[1];
@@ -160,7 +159,7 @@ function main(source: HTMLVideoElement) {
     let matrix: BitMatrix;
     let bits: BitMatrix;
     try {
-        [matrix, bits] = run(canvas1);
+        [matrix, bits] = run(canvas1, clip);
     } catch(e) {}
     ctx.strokeStyle = "red";
     ctx.beginPath();
@@ -311,8 +310,8 @@ function shake0(mag: number, bytes: Uint8ClampedArray, index: number, valueToSha
     const finderPosesBackup = finderPoses;
     finderPoses = Array.from(finderPoses);
     finderPoses[index] = [finderPoses[index][0] + mag * valueToShake[0], finderPoses[index][1] + mag * valueToShake[1]];
-    const [matrix, bits] = run(canvas1);
-    finderPoses = finderPosesBackup;    
+    const [matrix, bits] = run(canvas1, [0, 0, video.width, video.height]);
+    finderPoses = finderPosesBackup;
     return calculateDifference(bits, bytes, marginOnly);
 }
 
