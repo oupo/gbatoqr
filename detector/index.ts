@@ -211,11 +211,11 @@ function main(source: HTMLVideoElement) {
         ctx.arc(finderPoses[i][0] - x, finderPoses[i][1] - y, 3, 0, 2 * Math.PI);
         ctx.fill();
     }
-    if (matrix && bits) {
-        const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
+    const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
+    matrixToCanvas(matrix, canvas2);
+    if (bits) {
         const canvas3 = <HTMLCanvasElement>document.getElementById("canvas3");
         const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
-        matrixToCanvas(matrix, canvas2);
         matrixToCanvas(bits, canvas3);
         matrixToCanvas(bits, canvas4);
         drawDifference(canvas4, expected);
