@@ -302,13 +302,13 @@ function sampleTest() {
     const dpoints = differencePoints(bits, bytes, false);
     const points = [];
     for (let i = 0; i < 15; i ++) {
-        let n = Math.floor(Math.random() * points.length);
-        points.push(dpoints[n]);
-    }
-    for (let i = 0; i < 15; i ++) {
         let x = Math.floor(Math.random() * dimX / 2);
         let y = Math.floor(Math.random() * dimY);
         points.push([x, y]);
+    }
+    for (let i = 0; i < 15; i ++) {
+        let n = Math.floor(Math.random() * points.length);
+        points.push(dpoints[n]);
     }
     for ([x, y] of points) {
         const xx = Math.floor(x / 2) * 3;
@@ -355,6 +355,7 @@ function sampleTest() {
         }
         prepend($("<div/>").append(canvas).append($("<span> </span>")).append(canvas2).append($("<span/>").text(" ("+avg.join(",")+")")).get(0));
     }
+    prepend($("<div>sample test:</div>").get(0));
 }
 
 function differencePoints(bits: BitMatrix, srcBytes: Uint8ClampedArray, marginOnly: boolean) {
