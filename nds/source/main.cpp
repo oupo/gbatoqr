@@ -18,12 +18,14 @@ using std::uint8_t;
 int frameCount = 0;
 int lastFrameCount = 0;
 
-const int MARGIN = 5;
-const int QR_WIDTH = 252 - MARGIN * 2;
-const int QR_HEIGHT = 94 - MARGIN * 2;
+const int MARGIN = 6;
+const int XMARGIN = MARGIN / 3 * 2;
+const int YMARGIN = MARGIN;
+const int QR_WIDTH = 252 / 3 * 2 - XMARGIN * 2;
+const int QR_HEIGHT = 188 - YMARGIN * 2;
 const int QR_ECC_LEN = 30;
 const int QR_NUM_BLOCKS = 16;
-const int BLOCK_SIZE = 0x800;
+const int BLOCK_SIZE = 0xb00;
 
 void Vblank()
 {
@@ -54,6 +56,10 @@ void waitKey()
 	}
 }
 
+u16 getPixel(u16 *videoMemory, int x, int y) {
+	return videoMemory[x + y * 256];
+}
+
 void fillRect(u16 *videoMemory, int x, int y, int w, int h, u16 c)
 {
 	for (int dx = 0; dx < w; dx++)
@@ -62,6 +68,23 @@ void fillRect(u16 *videoMemory, int x, int y, int w, int h, u16 c)
 		{
 			videoMemory[x + dx + (y + dy) * 256] = c;
 		}
+	}
+}
+
+void fillModule(u16 *videoMemoryMain, int x, int y, bool isblack) {
+	int black = ARGB16(1, 0, 0, 0);
+	int gray = ARGB16(1, 10, 10, 10);
+	int white = ARGB16(1, 31, 31, 31);
+	int color = isblack ? black : white;
+
+
+	if (x % 2 == 0) {
+		fillRect(videoMemoryMain, 2 + x / 2 * 3, 2 + y, 1, 1, color);
+		fillRect(videoMemoryMain, 2 + x / 2 * 3 + 1, 2 + y, 1, 1, isblack ? gray : white);
+	} else {
+		bool leftFilled = getPixel(videoMemoryMain, 2 + x / 2 * 3 + 1, 2 + y) == gray;
+		fillRect(videoMemoryMain, 2 + x / 2 * 3 + 1, 2 + y, 1, 1, leftFilled ? (isblack ? black : gray) : (isblack ? gray : white));
+		fillRect(videoMemoryMain, 2 + x / 2 * 3 + 2, 2 + y, 1, 1, color);
 	}
 }
 
@@ -81,8 +104,7 @@ void dumpQR(u16 *videoMemoryMain, int blockid, uint8_t *buf, int len)
 	{
 		for (int x = 0; x < QR_WIDTH; x++)
 		{
-			int c = qr.getModule(x, y) ? 0 : 31;
-			fillRect(videoMemoryMain, 1 * (x + MARGIN) + 2, 2 * (y + MARGIN) + 2, 1, 2, ARGB16(1, c, c, c));
+			fillModule(videoMemoryMain, x + XMARGIN, y + YMARGIN, qr.getModule(x, y));
 		}
 	}
 }
@@ -127,28 +149,10 @@ int rnd(uint32_t &s) {
 
 void drawSide(uint16_t *videoMemoryMain) {
 	uint32_t s = 1;
-	for (int y = 0; y < MARGIN; y++) {
-		for (int x = 0; x < QR_WIDTH + MARGIN; x++) {
-			int c = rnd(s) & 1 ? 31 : 0;
-			fillRect(videoMemoryMain, 1 * x + 2, 2 * y + 2, 1, 2, ARGB16(1, c, c, c));
-		}
-	}
-	for (int y = 0; y < QR_HEIGHT + MARGIN; y++) {
-		for (int x = QR_WIDTH + MARGIN; x < QR_WIDTH + 2 * MARGIN; x++) {
-			int c = rnd(s) & 1 ? 31 : 0;
-			fillRect(videoMemoryMain, 1 * x + 2, 2 * y + 2, 1, 2, ARGB16(1, c, c, c));
-		}
-	}
-	for (int y = QR_HEIGHT + MARGIN; y < QR_HEIGHT + 2 * MARGIN; y++) {
-		for (int x = MARGIN; x < QR_WIDTH + 2 * MARGIN; x++) {
-			int c = rnd(s) & 1 ? 31 : 0;
-			fillRect(videoMemoryMain, 1 * x + 2, 2 * y + 2, 1, 2, ARGB16(1, c, c, c));
-		}
-	}
-	for (int y = MARGIN; y < QR_HEIGHT + 2 * MARGIN; y++) {
-		for (int x = 0; x < MARGIN; x++) {
-			int c = rnd(s) & 1 ? 31 : 0;
-			fillRect(videoMemoryMain, 1 * x + 2, 2 * y + 2, 1, 2, ARGB16(1, c, c, c));
+	for (int y = 0; y < QR_HEIGHT + 2 * YMARGIN; y++) {
+		for (int x = 0; x < QR_WIDTH + 2 * XMARGIN; x++) {
+			if (YMARGIN <= y && y < QR_HEIGHT + YMARGIN && XMARGIN <= x && x < QR_WIDTH + XMARGIN) continue;
+			fillModule(videoMemoryMain, x, y, rnd(s) & 1);
 		}
 	}
 }

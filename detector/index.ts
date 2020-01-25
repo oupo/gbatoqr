@@ -27,10 +27,10 @@ const MARGIN = 5;
 const numPixelsX = 252;
 const numPixelsY = 188;
 
-const dimX = 252;
-const dimY = 94;
+const dimX = 168;
+const dimY = 188;
 
-//test();
+test();
 
 if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     processCamera();
@@ -150,9 +150,9 @@ function run(canvas1: HTMLCanvasElement, clip: number[]) {
     let matrix = bitmap.getBlackMatrix();
     const transform = PerspectiveTransform.quadrilateralToQuadrilateral(
         0, 0,
-        dimX, 0,
-        dimX, dimY,
-        0, dimY,
+        numPixelsX, 0,
+        numPixelsX, numPixelsY,
+        0, numPixelsY,
         topLeft[0] - x, topLeft[1] - y,
         topRight[0] - x, topRight[1] - y,
         bottomRight[0] - x, bottomRight[1] - y,
@@ -163,6 +163,7 @@ function run(canvas1: HTMLCanvasElement, clip: number[]) {
         bits = sampler.sampleGridWithTransform(matrix, dimX, dimY, transform);
     } catch(e) {
         if (!(e instanceof NotFoundException)) throw e;
+        console.log(e);
     }
     return [matrix, bits];
 }

@@ -5,9 +5,10 @@ import {
     QRCodeECBlocks, QRCodeECB
 } from "../zxing-js/src/index";
 
-const MARGIN = 5;
-const WIDTH = 252 - MARGIN * 2;
-const HEIGHT = 94 - MARGIN * 2;
+const XMARGIN = 4;
+const YMARGIN = 6;
+const WIDTH = 160;
+const HEIGHT = 176;
 const TOTAL_CODE_WORDS = Math.floor((WIDTH * HEIGHT) / 8);
 const ECC_LEN = 30;
 const NUM_BLOCKS = 16;
@@ -80,7 +81,7 @@ class WideQRDataMask {
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
                 if (this.isMasked(x, y)) {
-                    bits.flip(MARGIN + x, MARGIN + y);
+                    bits.flip(XMARGIN + x, YMARGIN + y);
                 }
             }
         }
@@ -109,7 +110,7 @@ class WideQRBitMatrixParser {
             for (let x = 0; x < WIDTH; x ++) {
                 bitsRead++;
                 currentByte <<= 1;
-                if (this.bitMatrix.get(MARGIN + x, MARGIN + y)) {
+                if (this.bitMatrix.get(XMARGIN + x, YMARGIN + y)) {
                     currentByte |= 1;
                 }
                 if (bitsRead === 8) {

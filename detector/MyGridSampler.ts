@@ -34,10 +34,20 @@ export class MyGridSampler extends GridSampler {
         const points = new Float32Array(9 * 2);
         for (let y = 0; y < dimensionY; y++) {
             for (let x = 0; x < dimensionX; x ++) {
-                for (let j = 0; j < 3; j ++) {
-                    for (let i = 0; i < 3; i ++) {
-                        points[2 * (3 * j + i)] = x + (1/4) * (1+i);
-                        points[2 * (3 * j + i) + 1] = y + (1/4) * (1+j);
+                let xdiv2 = Math.floor(x / 2);
+                if (x % 2 == 0) {
+                    for (let j = 0; j < 3; j ++) {
+                        for (let i = 0; i < 3; i ++) {
+                            points[2 * (3 * j + i)] = xdiv2 * 3 + (1/4) * (1+i);
+                            points[2 * (3 * j + i) + 1] = y + (1/4) * (1+j);
+                        }
+                    }
+                } else {
+                    for (let j = 0; j < 3; j ++) {
+                        for (let i = 0; i < 3; i ++) {
+                            points[2 * (3 * j + i)] = xdiv2 * 3 + 2 + (1/4) * (1+i);
+                            points[2 * (3 * j + i) + 1] = y + (1/4) * (1+j);
+                        }
                     }
                 }
                 transform.transformPoints(points);
@@ -54,6 +64,7 @@ export class MyGridSampler extends GridSampler {
                         bits.set(x, y);
                     }
                 } catch (aioobe) {
+                    console.error(aioobe);  
                     throw new NotFoundException();
                 }
             }
