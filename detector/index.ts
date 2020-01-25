@@ -57,6 +57,10 @@ document.getElementById("shake").addEventListener("click", () => {
     }, 250);
 });
 
+document.getElementById("sample-test").addEventListener("click", () => {
+    sampleTest();
+});
+
 document.getElementById("shake-with-margin").addEventListener("click", () => {
     $("#shake-with-margin").text("Shaking...");
     setTimeout(() => {
@@ -257,7 +261,6 @@ function main(source: HTMLVideoElement) {
         ctx.arc(finderPoses[i][0] - x, finderPoses[i][1] - y, 3, 0, 2 * Math.PI);
         ctx.fill();
     }
-    const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
     if (bits) {
         const canvas3 = <HTMLCanvasElement>document.getElementById("canvas3");
         const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
@@ -271,6 +274,103 @@ function main(source: HTMLVideoElement) {
             if (!(e instanceof ChecksumException)) throw e;
         }
     }
+}
+
+function sampleTest() {
+    const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
+    let clip = posesToClip(finderPoses);
+    let [x, y] = clip;
+    videoToCanvas(video, clip);
+    const topLeft = finderPoses[0];
+    const topRight = finderPoses[1];
+    const bottomRight = finderPoses[2];
+    const bottomLeft = finderPoses[3];
+    const threshold = Number((<HTMLInputElement>document.getElementById("threshold")).value);
+    const threshold2 = Number((<HTMLInputElement>document.getElementById("threshold2")).value);
+    const imageArray = canvas1.getContext("2d").getImageData(0, 0, canvas1.width, canvas1.height).data;
+    const transform = PerspectiveTransform.quadrilateralToQuadrilateral(
+        0, 0,
+        numPixelsX, 0,
+        numPixelsX, numPixelsY,
+        0, numPixelsY,
+        topLeft[0] - x, topLeft[1] - y,
+        topRight[0] - x, topRight[1] - y,
+        bottomRight[0] - x, bottomRight[1] - y,
+        bottomLeft[0] - x, bottomLeft[1] - y);
+    const bits = run(canvas1, clip);
+    let bytes = imgToByteArray(expected);
+    const dpoints = differencePoints(bits, bytes, false);
+    const points = [];
+    for (let i = 0; i < 15; i ++) {
+        let n = Math.floor(Math.random() * points.length);
+        points.push(dpoints[n]);
+    }
+    for (let i = 0; i < 15; i ++) {
+        let x = Math.floor(Math.random() * dimX / 2);
+        let y = Math.floor(Math.random() * dimY);
+        points.push([x, y]);
+    }
+    for ([x, y] of points) {
+        const xx = Math.floor(x / 2) * 3;
+        const points = new Float32Array(4 * 2);
+        points[0] = xx, points[1] = y;
+        points[2] = xx + 3, points[3] = y;
+        points[4] = xx + 3, points[5] = y + 1;
+        points[6] = xx, points[7] = y + 1;
+        transform.transformPoints(points);
+        let avg = sample2Modules(imageArray, canvas1.width, canvas1.height, transform, x, y);
+        let umin = Math.floor(Math.min(points[0], points[2], points[4], points[6]));
+        let umax = Math.ceil(Math.max(points[0], points[2], points[4], points[6]));
+        let vmin = Math.floor(Math.min(points[1], points[3], points[5], points[7]));
+        let vmax = Math.ceil(Math.max(points[1], points[3], points[5], points[7]));
+        let canvas = document.createElement("canvas");
+        const scale = 3;
+        canvas.width = (umax - umin + 1) * scale;
+        canvas.height = (vmax - vmin + 1) * scale;
+        let ctx = canvas.getContext("2d");
+        ctx.drawImage(canvas1, umin, vmin, umax - umin + 1, vmax - vmin + 1, 0, 0, (umax - umin + 1) * scale, (vmax - vmin + 1) * scale);
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo((points[0] - umin) * scale, (points[1] - vmin) * scale);
+        ctx.lineTo((points[2] - umin) * scale, (points[3] - vmin) * scale);
+        ctx.lineTo((points[4] - umin) * scale, (points[5] - vmin) * scale);
+        ctx.lineTo((points[6] - umin) * scale, (points[7] - vmin) * scale);
+        ctx.closePath();
+        ctx.stroke();
+        let canvas2 = document.createElement("canvas");
+        canvas2.width = 20;
+        canvas2.height = 10;
+        ctx = canvas2.getContext("2d");
+        if (avg[2] - avg[0] >= threshold2) {
+            ctx.fillStyle = "black"; ctx.fillRect(0, 0, 10, 10);
+            ctx.fillStyle = "white"; ctx.fillRect(10, 0, 10, 10);
+        } else if (avg[0] - avg[2] >= threshold2) {
+            ctx.fillStyle = "white"; ctx.fillRect(0, 0, 10, 10);
+            ctx.fillStyle = "black"; ctx.fillRect(10, 0, 10, 10);
+        } else if (avg[0] + avg[1] + avg[2] <= 3 * threshold) {
+            ctx.fillStyle = "black"; ctx.fillRect(0, 0, 20, 10);
+        } else {
+            ctx.fillStyle = "white"; ctx.fillRect(0, 0, 20, 10);
+        }
+        prepend($("<div/>").append(canvas).append($("<span> </span>")).append(canvas2).append($("<span/>").text(" ("+avg.join(",")+")")).get(0));
+    }
+}
+
+function differencePoints(bits: BitMatrix, srcBytes: Uint8ClampedArray, marginOnly: boolean) {
+    let w = bits.getWidth(), h = bits.getHeight();
+    let count = 0;
+    let i = 0;
+    let points = [];
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            if (!(marginOnly && MARGIN <= y && y <= h - MARGIN && MARGIN <= x && x <= w - MARGIN)) {
+                if ((bits.get(x, y) ? 0 : 255) !== srcBytes[i]) points.push([x, y]);
+            }
+            i += 4;
+        }
+    }
+    return points;
 }
 
 function calculateDifference(bits: BitMatrix, srcBytes: Uint8ClampedArray, marginOnly: boolean) {
