@@ -73,7 +73,7 @@ void fillRect(u16 *videoMemory, int x, int y, int w, int h, u16 c)
 
 void fillModule(u16 *videoMemoryMain, int x, int y, bool isblack) {
 	int black = ARGB16(1, 0, 0, 0);
-	int gray = ARGB16(1, 10, 10, 10);
+	int gray = ARGB16(1, 16, 16, 16);
 	int white = ARGB16(1, 31, 31, 31);
 	int color = isblack ? black : white;
 

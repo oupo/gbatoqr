@@ -139,15 +139,13 @@ function searchFinder() {
 
 function run(canvas1: HTMLCanvasElement, clip: number[]) {
     const threshold = Number((<HTMLInputElement>document.getElementById("threshold")).value);
+    const threshold2 = Number((<HTMLInputElement>document.getElementById("threshold2")).value);
     let [x, y, w, h] = clip;
     const topLeft = finderPoses[0];
     const topRight = finderPoses[1];
     const bottomRight = finderPoses[2];
     const bottomLeft = finderPoses[3];
-    const luminanceSource = new HTMLCanvasElementLuminanceSource(canvas1);
-    const hybridBinarizer = new HybridBinarizer(luminanceSource, threshold);
-    const bitmap = new BinaryBitmap(hybridBinarizer);
-    let matrix = bitmap.getBlackMatrix();
+    const imageArray = canvas1.getContext('2d').getImageData(0, 0, canvas1.width, canvas1.height).data;
     const transform = PerspectiveTransform.quadrilateralToQuadrilateral(
         0, 0,
         numPixelsX, 0,
@@ -157,15 +155,62 @@ function run(canvas1: HTMLCanvasElement, clip: number[]) {
         topRight[0] - x, topRight[1] - y,
         bottomRight[0] - x, bottomRight[1] - y,
         bottomLeft[0] - x, bottomLeft[1] - y);
-    const sampler = new MyGridSampler();
-    let bits: BitMatrix = null;
-    try {
-        bits = sampler.sampleGridWithTransform(matrix, dimX, dimY, transform);
-    } catch(e) {
-        if (!(e instanceof NotFoundException)) throw e;
-        console.log(e);
+    let bits = sample(imageArray, canvas1.width, canvas1.height, dimX, dimY, threshold, threshold2, transform);
+    return bits;
+}
+
+function sample(imageArray: Uint8ClampedArray, width: number, height: number, dimensionX: number, dimensionY: number, threshold: number, threshold2: number, transform: PerspectiveTransform) {
+    const bits = new BitMatrix(dimensionX, dimensionY);
+    for (let y = 0; y < dimensionY; y++) {
+        for (let x = 0; x < dimensionX; x += 2) {
+            let avg = sample2Modules(imageArray, width, height, transform, x, y);
+            if (avg[2] - avg[0] >= threshold2) {
+                bits.set(x, y);
+            } else if (avg[0] - avg[2] >= threshold2) {
+                bits.set(x + 1, y);
+            } else if (avg[0] + avg[1] + avg[2] <= 3 * threshold) {
+                bits.set(x, y);
+                bits.set(x + 1, y);
+            } else {
+                // do nothing
+            }
+        }
     }
-    return [matrix, bits];
+    return bits;
+}
+
+function sample2Modules(imageArray: Uint8ClampedArray, width: number, height: number, transform: PerspectiveTransform, x: number, y: number) {
+    const points = new Float32Array(3 * 9 * 2);
+    const xx = Math.floor(x / 2) * 3;
+    for (let j = 0; j < 3; j ++) {
+        for (let i = 0; i < 3; i ++) {
+            points[2 * (9 * j + i)] = xx + (1/4) * (1+i);
+            points[2 * (9 * j + i) + 1] = y + (1/4) * (1+j);
+        }
+        for (let i = 3; i < 6; i ++) {
+            points[2 * (9 * j + i)] = xx + (1/4) * (1+i+1);
+            points[2 * (9 * j + i) + 1] = y + (1/4) * (1+j);
+        }
+        for (let i = 6; i < 9; i ++) {
+            points[2 * (9 * j + i)] = xx + (1/4) * (1+i+2);
+            points[2 * (9 * j + i) + 1] = y + (1/4) * (1+j);
+        }
+    }
+    transform.transformPoints(points);
+    const avg = new Int32Array(3);
+    for (let j = 0; j < 3; j ++) {
+        for (let i = 0; i < 9; i ++) {
+            let k = 2 * (9 * j + i);
+            let x = Math.floor(points[k]), y = Math.floor(points[k+1]);
+            let idx = (y * width + x) * 4;
+            let color = imageArray[idx] + imageArray[idx + 1] + imageArray[idx + 2];
+            avg[Math.floor(i / 3)] += color;
+        }
+    }
+    for (let i = 0; i < 3; i ++) {
+        avg[i] = Math.round(avg[i] / (3*9));
+    }
+    return avg;
 }
 
 function videoToCanvas(video: HTMLVideoElement, clip: number[]) {
@@ -197,7 +242,7 @@ function main(source: HTMLVideoElement) {
     const topRight = finderPoses[1];
     const bottomRight = finderPoses[2];
     const bottomLeft = finderPoses[3];
-    const [matrix, bits] = run(canvas1, clip);
+    const bits = run(canvas1, clip);
     ctx.strokeStyle = "red";
     ctx.beginPath();
     ctx.moveTo(topLeft[0] - x, topLeft[1] - y);
@@ -213,7 +258,6 @@ function main(source: HTMLVideoElement) {
         ctx.fill();
     }
     const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
-    matrixToCanvas(matrix, canvas2);
     if (bits) {
         const canvas3 = <HTMLCanvasElement>document.getElementById("canvas3");
         const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
@@ -344,7 +388,7 @@ function shake0(mag: number, bytes: Uint8ClampedArray, index: number, valueToSha
     const finderPosesBackup = finderPoses;
     finderPoses = Array.from(finderPoses);
     finderPoses[index] = [finderPoses[index][0] + mag * valueToShake[0], finderPoses[index][1] + mag * valueToShake[1]];
-    const [matrix, bits] = run(canvas1, [0, 0, video.width, video.height]);
+    const bits = run(canvas1, [0, 0, video.width, video.height]);
     finderPoses = finderPosesBackup;
     return calculateDifference(bits, bytes, marginOnly);
 }
