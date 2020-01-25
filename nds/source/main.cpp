@@ -20,10 +20,10 @@ int lastFrameCount = 0;
 
 const int MARGIN = 5;
 const int QR_WIDTH = 252 - MARGIN * 2;
-const int QR_HEIGHT = 94 - MARGIN * 2;
+const int QR_HEIGHT = 188 - MARGIN * 2;
 const int QR_ECC_LEN = 30;
-const int QR_NUM_BLOCKS = 16;
-const int BLOCK_SIZE = 0x800;
+const int QR_NUM_BLOCKS = 42;
+const int BLOCK_SIZE = 0x1000;
 
 void Vblank()
 {
@@ -36,7 +36,7 @@ void OnKeyPressed(int key) {
 }
 
 void wait(int count)
-{
+{	
 	while (frameCount - lastFrameCount < count)
 	{
 		swiWaitForVBlank();
@@ -82,7 +82,7 @@ void dumpQR(u16 *videoMemoryMain, int blockid, uint8_t *buf, int len)
 		for (int x = 0; x < QR_WIDTH; x++)
 		{
 			int c = qr.getModule(x, y) ? 0 : 31;
-			fillRect(videoMemoryMain, 1 * (x + MARGIN) + 2, 2 * (y + MARGIN) + 2, 1, 2, ARGB16(1, c, c, c));
+			fillRect(videoMemoryMain, 1 * (x + MARGIN) + 2, 1 * (y + MARGIN) + 2, 1, 1, ARGB16(1, c, c, c));
 		}
 	}
 }
@@ -130,25 +130,25 @@ void drawSide(uint16_t *videoMemoryMain) {
 	for (int y = 0; y < MARGIN; y++) {
 		for (int x = 0; x < QR_WIDTH + MARGIN; x++) {
 			int c = rnd(s) & 1 ? 31 : 0;
-			fillRect(videoMemoryMain, 1 * x + 2, 2 * y + 2, 1, 2, ARGB16(1, c, c, c));
+			fillRect(videoMemoryMain, 1 * x + 2, 1 * y + 2, 1, 1, ARGB16(1, c, c, c));
 		}
 	}
 	for (int y = 0; y < QR_HEIGHT + MARGIN; y++) {
 		for (int x = QR_WIDTH + MARGIN; x < QR_WIDTH + 2 * MARGIN; x++) {
 			int c = rnd(s) & 1 ? 31 : 0;
-			fillRect(videoMemoryMain, 1 * x + 2, 2 * y + 2, 1, 2, ARGB16(1, c, c, c));
+			fillRect(videoMemoryMain, 1 * x + 2, 1 * y + 2, 1, 1, ARGB16(1, c, c, c));
 		}
 	}
 	for (int y = QR_HEIGHT + MARGIN; y < QR_HEIGHT + 2 * MARGIN; y++) {
 		for (int x = MARGIN; x < QR_WIDTH + 2 * MARGIN; x++) {
 			int c = rnd(s) & 1 ? 31 : 0;
-			fillRect(videoMemoryMain, 1 * x + 2, 2 * y + 2, 1, 2, ARGB16(1, c, c, c));
+			fillRect(videoMemoryMain, 1 * x + 2, 1 * y + 2, 1, 1, ARGB16(1, c, c, c));
 		}
 	}
 	for (int y = MARGIN; y < QR_HEIGHT + 2 * MARGIN; y++) {
 		for (int x = 0; x < MARGIN; x++) {
 			int c = rnd(s) & 1 ? 31 : 0;
-			fillRect(videoMemoryMain, 1 * x + 2, 2 * y + 2, 1, 2, ARGB16(1, c, c, c));
+			fillRect(videoMemoryMain, 1 * x + 2, 1 * y + 2, 1, 1, ARGB16(1, c, c, c));
 		}
 	}
 }

@@ -28,7 +28,7 @@ const numPixelsX = 252;
 const numPixelsY = 188;
 
 const dimX = 252;
-const dimY = 94;
+const dimY = 188;
 
 //test();
 

@@ -7,10 +7,10 @@ import {
 
 const MARGIN = 5;
 const WIDTH = 252 - MARGIN * 2;
-const HEIGHT = 94 - MARGIN * 2;
+const HEIGHT = 188 - MARGIN * 2;
 const TOTAL_CODE_WORDS = Math.floor((WIDTH * HEIGHT) / 8);
 const ECC_LEN = 30;
-const NUM_BLOCKS = 16;
+const NUM_BLOCKS = 42;
 const DUMMY_VER = QRCodeVersion.getVersionForNumber(40);
 const SHORT_BLOCK_LEN = Math.floor(TOTAL_CODE_WORDS / NUM_BLOCKS);
 const NUM_SHORT_BLOCKS = NUM_BLOCKS - TOTAL_CODE_WORDS % NUM_BLOCKS;
