@@ -36,6 +36,8 @@ let worker = new Worker("worker.ts");
 
 //test();
 
+loadExpected();
+
 if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     processCamera();
 } else {
@@ -84,10 +86,24 @@ worker.addEventListener("message", (message) => {
     const bitsWidth = <number>message.data.bitsWidth;
     const bitsHeight = <number>message.data.bitsHeight;
     const bitsRowSize = <number>message.data.bitsRowSize;
+    const canvas3buffer = <Uint8ClampedArray>message.data.canvas3buffer;
+    const canvas4buffer = <Uint8ClampedArray>message.data.canvas4buffer;
     const matrix = new BitMatrix(matrixWidth, matrixHeight, matrixRowSize, matrixBits);
     const bits = new BitMatrix(bitsWidth, bitsHeight, bitsRowSize, bitsBits);
-    onresponse(matrix, bits, bytes, times);
+    onresponse(matrix, bits, bytes, times, canvas3buffer, canvas4buffer);
 });
+
+function loadExpected() {
+    if (!expected.complete) {
+        expected.addEventListener("load", loadExpected);
+    }
+    const expectedBytes = imgToByteArray(expected);
+    worker.postMessage({
+        type: "expectedbytes",
+        expectedBytes: expectedBytes
+    });
+}
+
 
 function test() {
     let byteArray = imgToByteArray(expected);
@@ -236,6 +252,7 @@ function main(source: HTMLVideoElement) {
     }
     const time2 = Date.now();
     worker.postMessage({
+        type: "work",
         imageBuffer: imageBuffer,
         width: canvas1.width,
         height: canvas1.height,
@@ -247,16 +264,16 @@ function main(source: HTMLVideoElement) {
     }, [imageBuffer.buffer]);
 }
 
-function onresponse(matrix: BitMatrix, bits: BitMatrix, bytes: Uint8Array, times: number[]) {
+function onresponse(matrix: BitMatrix, bits: BitMatrix, bytes: Uint8Array, times: number[], canvas3buffer: Uint8ClampedArray, canvas4buffer: Uint8ClampedArray) {
     const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
     matrixToCanvas(matrix, canvas2);
     if (bits) {
         const canvas3 = <HTMLCanvasElement>document.getElementById("canvas3");
         const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
-        matrixToCanvas(bits, canvas3);
-        matrixToCanvas(bits, canvas4);
-        if (!expectedBytes) expectedBytes = imgToByteArray(expected);
-        drawDifference(canvas4, expectedBytes, expected.width, expected.height);
+        canvas3.width = canvas4.width = bits.getWidth();
+        canvas3.height = canvas4.height = bits.getHeight();
+        canvas3.getContext("2d").putImageData(new ImageData(canvas3buffer, bits.getWidth(), bits.getHeight()), 0, 0);
+        canvas4.getContext("2d").putImageData(new ImageData(canvas4buffer, bits.getWidth(), bits.getHeight()), 0, 0);
     }
     if (bytes) {
         handleResponse(bytes);
