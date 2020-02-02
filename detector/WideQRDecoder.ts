@@ -101,28 +101,32 @@ class WideQRBitMatrixParser {
 
     public readCodewords(): Uint8Array {
         WideQRDataMask.unmaskBitMatrix(this.bitMatrix);
-        const result = new Uint8Array(TOTAL_CODE_WORDS);
-        let resultOffset = 0;
-        let currentByte = 0;
-        let bitsRead = 0;
-        for (let y = 0; y < HEIGHT; y ++) {
-            for (let x = 0; x < WIDTH; x ++) {
-                bitsRead++;
-                currentByte <<= 1;
-                if (this.bitMatrix.get(MARGIN + x, MARGIN + y)) {
-                    currentByte |= 1;
-                }
-                if (bitsRead === 8) {
-                    result[resultOffset++] = currentByte;
-                    bitsRead = 0;
-                    currentByte = 0;
+        try {
+            const result = new Uint8Array(TOTAL_CODE_WORDS);
+            let resultOffset = 0;
+            let currentByte = 0;
+            let bitsRead = 0;
+            for (let y = 0; y < HEIGHT; y ++) {
+                for (let x = 0; x < WIDTH; x ++) {
+                    bitsRead++;
+                    currentByte <<= 1;
+                    if (this.bitMatrix.get(MARGIN + x, MARGIN + y)) {
+                        currentByte |= 1;
+                    }
+                    if (bitsRead === 8) {
+                        result[resultOffset++] = currentByte;
+                        bitsRead = 0;
+                        currentByte = 0;
+                    }
                 }
             }
+            if (resultOffset !== TOTAL_CODE_WORDS) {
+                throw new FormatException();
+            }
+            return result;
+        } finally {
+            WideQRDataMask.unmaskBitMatrix(this.bitMatrix);
         }
-        if (resultOffset !== TOTAL_CODE_WORDS) {
-            throw new FormatException();
-        }
-        return result;
     }
 
     public remask(): void {

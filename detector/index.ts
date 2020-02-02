@@ -13,11 +13,13 @@ declare global { const JSZip : any; }
 import * as StackBlur from "stackblur-canvas";
 import { MyGridSampler } from "./MyGridSampler";
 import { WideQRDecoder } from "./WideQRDecoder";
+import { binarize } from "./MyBinarizer";
 
 const MAX_OUTPUT = 50;
 const video = <HTMLVideoElement>document.getElementById('video');
 const output = document.getElementById("output");
 const expected = <HTMLImageElement>document.getElementById("expected");
+let expectedBytes: Uint8ClampedArray = null;
 let finderPoses: Array<[number, number]> = [[10, 10], [30, 10], [30, 30], [10, 30]];
 let romdata: ArrayBuffer[] = [];
 let maxNum: number = undefined;
@@ -29,6 +31,8 @@ const numPixelsY = 188;
 
 const dimX = 252;
 const dimY = 94;
+
+let worker = new Worker("worker.ts");
 
 //test();
 
@@ -64,8 +68,25 @@ document.getElementById("shake-with-margin").addEventListener("click", () => {
         $("#shake-with-margin").text("Shake with margin");
     }, 250);
 });
+
 document.getElementById("search-finder").addEventListener("click", () => {
     searchFinder();
+});
+
+worker.addEventListener("message", (message) => {
+    const matrixBits = <Int32Array>message.data.matrixBits;
+    const bitsBits = <Int32Array>message.data.bitsBits;
+    const bytes = <Uint8Array>message.data.bytes;
+    const times = <number[]>message.data.times;
+    const matrixWidth = <number>message.data.matrixWidth;
+    const matrixHeight = <number>message.data.matrixHeight;
+    const matrixRowSize = <number>message.data.matrixRowSize;
+    const bitsWidth = <number>message.data.bitsWidth;
+    const bitsHeight = <number>message.data.bitsHeight;
+    const bitsRowSize = <number>message.data.bitsRowSize;
+    const matrix = new BitMatrix(matrixWidth, matrixHeight, matrixRowSize, matrixBits);
+    const bits = new BitMatrix(bitsWidth, bitsHeight, bitsRowSize, bitsBits);
+    onresponse(matrix, bits, bytes, times);
 });
 
 function test() {
@@ -187,16 +208,18 @@ function posesToClip(poses: [number, number][]) {
 }
 
 function main(source: HTMLVideoElement) {
+    const time1 = Date.now();
+    const threshold = Number((<HTMLInputElement>document.getElementById("threshold")).value);
     const canvas1 = <HTMLCanvasElement>document.getElementById("canvas1");
     const ctx = canvas1.getContext("2d");
     let clip = posesToClip(finderPoses);
-    let [x, y] = clip;
+    let [x, y, w, h] = clip;
     videoToCanvas(source, clip);
     const topLeft = finderPoses[0];
     const topRight = finderPoses[1];
     const bottomRight = finderPoses[2];
     const bottomLeft = finderPoses[3];
-    const [matrix, bits] = run(canvas1, clip);
+    const imageBuffer = ctx.getImageData(0, 0, canvas1.width, canvas1.height).data;
     ctx.strokeStyle = "red";
     ctx.beginPath();
     ctx.moveTo(topLeft[0] - x, topLeft[1] - y);
@@ -211,6 +234,20 @@ function main(source: HTMLVideoElement) {
         ctx.arc(finderPoses[i][0] - x, finderPoses[i][1] - y, 3, 0, 2 * Math.PI);
         ctx.fill();
     }
+    const time2 = Date.now();
+    worker.postMessage({
+        imageBuffer: imageBuffer,
+        width: canvas1.width,
+        height: canvas1.height,
+        x: x,
+        y: y,
+        finderPoses: finderPoses,
+        threshold: threshold,
+        times: [time1, time2]
+    }, [imageBuffer.buffer]);
+}
+
+function onresponse(matrix: BitMatrix, bits: BitMatrix, bytes: Uint8Array, times: number[]) {
     const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
     matrixToCanvas(matrix, canvas2);
     if (bits) {
@@ -218,14 +255,13 @@ function main(source: HTMLVideoElement) {
         const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
         matrixToCanvas(bits, canvas3);
         matrixToCanvas(bits, canvas4);
-        drawDifference(canvas4, expected);
-        try {
-            let result = new WideQRDecoder().decodeBitMatrix(bits);
-            handleResponse(result.getByteSegments()[0]);
-        } catch(e) {
-            if (!(e instanceof ChecksumException)) throw e;
-        }
+        if (!expectedBytes) expectedBytes = imgToByteArray(expected);
+        drawDifference(canvas4, expectedBytes, expected.width, expected.height);
     }
+    if (bytes) {
+        handleResponse(bytes);
+    }
+    $("#time").text(String(times[1] - times[0]) + " ms; " + String(times[2] - times[1]) + " ms; " + String(Date.now() - times[2]) + " ms");
 }
 
 function calculateDifference(bits: BitMatrix, srcBytes: Uint8ClampedArray, marginOnly: boolean) {
@@ -243,12 +279,11 @@ function calculateDifference(bits: BitMatrix, srcBytes: Uint8ClampedArray, margi
     return count;
 }
 
-function drawDifference(canvas: HTMLCanvasElement, img: HTMLImageElement) {
+function drawDifference(canvas: HTMLCanvasElement, srcBytes: Uint8ClampedArray, w: number, h: number) {
     let ctx = canvas.getContext("2d");
-    let srcBytes = imgToByteArray(img);
-    let imageData = ctx.getImageData(0, 0, img.width, img.height);
+    let imageData = ctx.getImageData(0, 0, w, h);
     let destBytes = imageData.data;
-    for (let i = 0, l = img.width * img.height * 4; i < l; i += 4) {
+    for (let i = 0, l = w * h * 4; i < l; i += 4) {
         let changed = destBytes[i] == srcBytes[i] ? 0 : (destBytes[i] == 255 ? 1 : 2);
         destBytes[i] = changed == 1 ? 255 : 0;
         destBytes[i + 1] = changed == 2 ? 255 : 0;
@@ -309,11 +344,9 @@ function processCamera() {
             finderPoses = [[0, 0], [width - 1, 0], [width - 1, height - 1], [0, height - 1]];
             setInterval(() => {
                 try {
-                    let startTime = Date.now();
                     main(video);
-                    $("#time").text(String(Date.now() - startTime) + " msec");
                 } catch (e) { console.error(e); }
-            }, 50);
+            }, 33);
         });
     });
 }
