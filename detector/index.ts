@@ -271,7 +271,6 @@ function main(source: HTMLVideoElement) {
 
 function onresponse(matrix: BitMatrix, bits: BitMatrix, bytes: Uint8Array, times: number[], canvas3buffer: Uint8ClampedArray, canvas4buffer: Uint8ClampedArray) {
     const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
-    canvas2.getContext("2d").putImageData(new ImageData(1, 1), 0, 0); // 謎の挙動対策
     if (!started) {
         matrixToCanvas(matrix, canvas2);
         if (bits) {
