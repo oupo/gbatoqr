@@ -82,7 +82,7 @@ function work(imageBuffer: Uint8ClampedArray, w: number, h: number, x: number, y
         canvas3buffer = matrixToImageBuffer(bits);
         canvas4buffer = matrixToImageBuffer(bits);
     }
-    difference(canvas4buffer, expectedBytes, matrix.getWidth(), h = matrix.getHeight());
+    difference(canvas4buffer, expectedBytes, bits.getWidth(), bits.getHeight());
     return [matrix, bits, bytes, canvas3buffer, canvas4buffer];
 }
 
