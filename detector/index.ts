@@ -24,6 +24,7 @@ let finderPoses: Array<[number, number]> = [[10, 10], [30, 10], [30, 30], [10, 3
 let romdata: ArrayBuffer[] = [];
 let maxNum: number = undefined;
 let succeededTestData = false;
+let started = false;
 
 const MARGIN = 5;
 const numPixelsX = 252;
@@ -73,6 +74,10 @@ document.getElementById("shake-with-margin").addEventListener("click", () => {
 
 document.getElementById("search-finder").addEventListener("click", () => {
     searchFinder();
+});
+
+document.getElementById("start").addEventListener("click", () => {
+    started = true;
 });
 
 worker.addEventListener("message", (message) => {
@@ -266,14 +271,16 @@ function main(source: HTMLVideoElement) {
 
 function onresponse(matrix: BitMatrix, bits: BitMatrix, bytes: Uint8Array, times: number[], canvas3buffer: Uint8ClampedArray, canvas4buffer: Uint8ClampedArray) {
     const canvas2 = <HTMLCanvasElement>document.getElementById("canvas2");
-    matrixToCanvas(matrix, canvas2);
-    if (bits) {
-        const canvas3 = <HTMLCanvasElement>document.getElementById("canvas3");
-        const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
-        canvas3.width = canvas4.width = bits.getWidth();
-        canvas3.height = canvas4.height = bits.getHeight();
-        canvas3.getContext("2d").putImageData(new ImageData(canvas3buffer, bits.getWidth(), bits.getHeight()), 0, 0);
-        canvas4.getContext("2d").putImageData(new ImageData(canvas4buffer, bits.getWidth(), bits.getHeight()), 0, 0);
+    if (!started) {
+        matrixToCanvas(matrix, canvas2);
+        if (bits) {
+            const canvas3 = <HTMLCanvasElement>document.getElementById("canvas3");
+            const canvas4 = <HTMLCanvasElement>document.getElementById("canvas4");
+            canvas3.width = canvas4.width = bits.getWidth();
+            canvas3.height = canvas4.height = bits.getHeight();
+            canvas3.getContext("2d").putImageData(new ImageData(canvas3buffer, bits.getWidth(), bits.getHeight()), 0, 0);
+            canvas4.getContext("2d").putImageData(new ImageData(canvas4buffer, bits.getWidth(), bits.getHeight()), 0, 0);
+        }
     }
     if (bytes) {
         handleResponse(bytes);
@@ -363,7 +370,7 @@ function processCamera() {
                 try {
                     main(video);
                 } catch (e) { console.error(e); }
-            }, 15);
+            }, 5);
         });
     });
 }
