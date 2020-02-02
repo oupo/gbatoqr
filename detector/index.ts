@@ -363,7 +363,7 @@ function processCamera() {
                 try {
                     main(video);
                 } catch (e) { console.error(e); }
-            }, 33);
+            }, 15);
         });
     });
 }
